@@ -1,12 +1,21 @@
 import json
+import requests
 from langchain.tools import tool
 
+# --- MODIFIED TOOL ---
 @tool
-def check_inventory(product_id: str, attributes: dict, location: str) -> str:
+def check_inventory(product_id: str, location: str, size: str = None, color: str = None) -> str:
     """
-    Checks the inventory for a given product ID, its attributes (like size and color), and a location.
-    Returns the stock status and store availability.
+    Checks the inventory for a given product ID and location. 
+    You can also specify optional attributes like size and color.
     """
+    # Reconstruct the attributes dictionary for the print statement
+    attributes = {}
+    if size:
+        attributes['size'] = size
+    if color:
+        attributes['color'] = color
+
     print(f"--- Calling Inventory Agent ---")
     print(f"Checking stock for {product_id} with attributes {attributes} in {location}")
 
@@ -16,11 +25,12 @@ def check_inventory(product_id: str, attributes: dict, location: str) -> str:
         "onlineStatus": "in_stock",
         "stockLevel": 15,
         "availableStores": [
-            {"storeName": "Select Citywalk", "stockLevel": 5},
-            {"storeName": "DLF Promenade", "stockLevel": 2},
+            {"storeName": "Select Citywalk", "storeId": "STORE_SCW_DL", "stockLevel": 5},
+            {"storeName": "DLF Promenade", "storeId": "STORE_DLF_DL", "stockLevel": 2},
         ]
     }
     return json.dumps(mock_inventory)
+# --- END OF MODIFICATION ---
 
 @tool
 def get_recommendations(user_id: str, context: str) -> str:
@@ -59,11 +69,25 @@ def initiate_checkout(user_id: str, cart_id: str) -> str:
 @tool
 def reserve_in_store(user_id: str, product_id: str, store_id: str) -> str:
     """
-    Reserves an item in a physical store for a user.
+    Reserves an item in a physical store for a user by calling the Fulfillment Agent API.
     """
-    print(f"--- Calling Fulfillment Agent ---")
-    print(f"Reserving product {product_id} at store {store_id} for user {user_id}")
-    return json.dumps({"status": "success", "reservationId": "RES12345"})
+    print(f"--- >>> CONTACTING LIVE FULFILLMENT AGENT <<< ---")
+    
+    url = "http://127.0.0.1:5001/reserve-in-store"
+    payload = {
+        "user_id": user_id,
+        "product_id": product_id,
+        "store_id": store_id
+    }
+    
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return json.dumps(response.json())
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Fulfillment Agent: {e}")
+        return json.dumps({"status": "error", "message": "Could not connect to the fulfillment service."})
 
 @tool
 def get_applicable_offers(user_id: str, cart_id: str) -> str:
@@ -83,7 +107,6 @@ def get_order_status(order_id: str, user_id: str) -> str:
     print(f"Checking status for order {order_id} for user {user_id}")
     return json.dumps({"orderId": order_id, "status": "Shipped", "trackingLink": "https://example.com/track/123"})
 
-# Combine all tools into a single list
 all_tools = [
     check_inventory,
     get_recommendations,
@@ -92,3 +115,4 @@ all_tools = [
     get_applicable_offers,
     get_order_status,
 ]
+
