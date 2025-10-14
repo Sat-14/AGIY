@@ -1,0 +1,41 @@
+{
+  "agentName": "loyaltyAndOffersAgent",
+  "description": "Manages customer loyalty points and applies promotions.",
+  "functions": {
+    "getApplicableOffers": {
+      "description": "Fetches all valid offers for a given user and their cart.",
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "string" },
+          "cartId": { "type": "string" }
+        },
+        "required": ["userId", "cartId"]
+      },
+      "responseSchema": {
+        "type": "object",
+        "properties": {
+          "offers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "offerId": { "type": "string" },
+                "description": { "type": "string" },
+                "isApplicable": { "type": "boolean" }
+              }
+            }
+          },
+          "loyaltyPoints": {
+            "type": "object",
+            "properties": {
+              "balance": { "type": "integer" },
+              "equivalentValue": { "type": "number" },
+              "isRedeemable": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

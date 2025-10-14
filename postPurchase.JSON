@@ -1,0 +1,27 @@
+{
+  "agentName": "postPurchaseSupportAgent",
+  "description": "Provides information and actions for orders that have already been placed.",
+  "functions": {
+    "getOrderStatus": {
+      "description": "Retrieves the current status and tracking details for an order.",
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string" },
+          "userId": { "type": "string" }
+        },
+        "required": ["orderId", "userId"]
+      },
+      "responseSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string" },
+          "status": { "type": "string" },
+          "statusDescription": { "type": "string" },
+          "estimatedDelivery": { "type": "string", "format": "date" },
+          "trackingLink": { "type": "string", "format": "uri" }
+        }
+      }
+    }
+  }
+}

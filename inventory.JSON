@@ -1,0 +1,49 @@
+{
+  "agentName": "inventoryAgent",
+  "description": "Provides real-time stock information for products.",
+  "functions": {
+    "checkStock": {
+      "description": "Checks online and in-store availability for a specific product variant.",
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "productId": { "type": "string" },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "size": { "type": "string" },
+              "color": { "type": "string" }
+            }
+          },
+          "locationContext": {
+            "type": "object",
+            "properties": {
+              "city": { "type": "string" }
+            }
+          }
+        },
+        "required": ["productId"]
+      },
+      "responseSchema": {
+        "type": "object",
+        "properties": {
+          "productId": { "type": "string" },
+          "onlineStatus": { "type": "string", "enum": ["in_stock", "out_of_stock", "low_stock"] },
+          "availableStores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "storeId": { "type": "string" },
+                "storeName": { "type": "string" },
+                "address": { "type": "string" },
+                "stockLevel": { "type": "integer" },
+                "stockDescriptor": { "type": "string", "enum": ["high", "medium", "low"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

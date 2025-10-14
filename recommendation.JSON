@@ -1,0 +1,42 @@
+{
+  "agentName": "recommendationAgent",
+  "description": "Provides product suggestions based on user context and history.",
+  "functions": {
+    "getRecommendations": {
+      "description": "Fetches a list of relevant products based on user context.",
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "string" },
+          "context": { "type": "string", "enum": ["viewing_product", "homepage", "added_to_cart"] },
+          "contextProductId": { "type": "string" },
+          "count": { "type": "integer" }
+        },
+        "required": ["userId", "context", "count"]
+      },
+      "responseSchema": {
+        "type": "object",
+        "properties": {
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productId": { "type": "string" },
+                "name": { "type": "string" },
+                "imageUrl": { "type": "string", "format": "uri" },
+                "price": {
+                  "type": "object",
+                  "properties": {
+                    "amount": { "type": "number" },
+                    "currency": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
