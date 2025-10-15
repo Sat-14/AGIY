@@ -87,15 +87,51 @@ def process_payment():
             "message": f"Transaction {transaction_id} not found."
         }), 404
 
-    # Simulate payment processing
+    # Simulate payment processing with multiple edge cases
     if payment_method.lower() == "credit_card":
         card_number = payment_details.get("cardNumber", "")
-        if "1111" in card_number:  # Mock failing card
+        if "1111" in card_number:  # Mock failing card - insufficient funds
             transaction["status"] = "failed"
+            transaction["failureReason"] = "insufficient_funds"
             return jsonify({
                 "status": "failed",
                 "transactionId": transaction_id,
-                "message": "Transaction Failed: Your card was declined due to insufficient funds."
+                "failureReason": "insufficient_funds",
+                "message": "Transaction Failed: Your card was declined due to insufficient funds.",
+                "suggestions": [
+                    "Try a different payment method",
+                    "Use UPI payment",
+                    "Redeem loyalty points to reduce amount",
+                    "Apply available coupons"
+                ]
+            }), 200
+        elif "2222" in card_number:  # Mock failing card - expired card
+            transaction["status"] = "failed"
+            transaction["failureReason"] = "card_expired"
+            return jsonify({
+                "status": "failed",
+                "transactionId": transaction_id,
+                "failureReason": "card_expired",
+                "message": "Transaction Failed: Your card has expired.",
+                "suggestions": [
+                    "Update your card details",
+                    "Try a different card",
+                    "Use UPI or other payment methods"
+                ]
+            }), 200
+        elif "3333" in card_number:  # Mock failing card - network error
+            transaction["status"] = "failed"
+            transaction["failureReason"] = "network_error"
+            return jsonify({
+                "status": "failed",
+                "transactionId": transaction_id,
+                "failureReason": "network_error",
+                "message": "Transaction Failed: Network connection error. Please try again.",
+                "suggestions": [
+                    "Retry the payment",
+                    "Check your internet connection",
+                    "Try a different payment method"
+                ]
             }), 200
         elif "4242" in card_number:  # Mock successful card
             transaction["status"] = "completed"
@@ -110,7 +146,13 @@ def process_payment():
             return jsonify({
                 "status": "failed",
                 "transactionId": transaction_id,
-                "message": "Invalid card details provided."
+                "failureReason": "invalid_card",
+                "message": "Invalid card details provided.",
+                "suggestions": [
+                    "Check your card number",
+                    "Verify card details are correct",
+                    "Try a different payment method"
+                ]
             }), 200
 
     elif payment_method.lower() == "upi":
