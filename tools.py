@@ -2,60 +2,66 @@ import json
 import requests
 from langchain.tools import tool
 
-# --- MODIFIED TOOL ---
 @tool
 def check_inventory(product_id: str, location: str, size: str = None, color: str = None) -> str:
     """
-    Checks the inventory for a given product ID and location. 
+    Checks the inventory for a given product ID and location.
+    Provides real-time stock across warehouses and stores with fulfillment options.
     You can also specify optional attributes like size and color.
     """
-    # Reconstruct the attributes dictionary for the print statement
+    print(f"--- >>> CONTACTING LIVE INVENTORY AGENT <<< ---")
+
+    url = "http://127.0.0.1:5003/check-inventory"
+
+    # Build attributes and location context
     attributes = {}
     if size:
         attributes['size'] = size
     if color:
         attributes['color'] = color
 
-    print(f"--- Calling Inventory Agent ---")
-    print(f"Checking stock for {product_id} with attributes {attributes} in {location}")
+    location_context = {"city": location} if location else {}
 
-    # Mock data mimicking a real API response
-    mock_inventory = {
-        "productId": product_id,
-        "onlineStatus": "in_stock",
-        "stockLevel": 15,
-        "availableStores": [
-            {"storeName": "Select Citywalk", "storeId": "STORE_SCW_DL", "stockLevel": 5},
-            {"storeName": "DLF Promenade", "storeId": "STORE_DLF_DL", "stockLevel": 2},
-        ]
+    payload = {
+        "product_id": product_id,
+        "attributes": attributes,
+        "location_context": location_context
     }
-    return json.dumps(mock_inventory)
-# --- END OF MODIFICATION ---
+
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return json.dumps(response.json())
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Inventory Agent: {e}")
+        return json.dumps({"status": "error", "message": "Could not connect to the inventory service."})
 
 @tool
-def get_recommendations(user_id: str, context: str) -> str:
+def get_recommendations(user_id: str, context: str, count: int = 3) -> str:
     """
     Provides product recommendations based on a user ID and their current context (e.g., 'casual blue jacket for women').
+    Analyzes customer profile, browsing history, and seasonal trends.
+    Returns personalized product suggestions, bundles, and promotions.
     Use this tool to find products for the user.
     """
-    print(f"--- Calling Recommendation Agent ---")
-    print(f"Getting recommendations for user {user_id} in context: {context}")
+    print(f"--- >>> CONTACTING LIVE RECOMMENDATION AGENT <<< ---")
 
-    # Mock data mimicking a real API response
-    if "jacket" in context.lower():
-        mock_products = [
-            {"productId": "SKU_JCK_01", "name": "Denim Trucker Jacket", "price": 4999},
-            {"productId": "SKU_JCK_02", "name": "Classic Biker Jacket", "price": 8999},
-            {"productId": "SKU_JCK_03", "name": "Lightweight Puffer Jacket", "price": 5499},
-        ]
-        return json.dumps(mock_products)
-    else:
-        # Return a generic response if the context is not a jacket
-        mock_products = [
-            {"productId": "SKU_GEN_01", "name": "Classic White T-Shirt", "price": 1299},
-            {"productId": "SKU_GEN_02", "name": "Slim Fit Chinos", "price": 3499},
-        ]
-        return json.dumps(mock_products)
+    url = "http://127.0.0.1:5002/get-recommendations"
+    payload = {
+        "user_id": user_id,
+        "context": context,
+        "count": count
+    }
+
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return json.dumps(response.json())
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Recommendation Agent: {e}")
+        return json.dumps({"status": "error", "message": "Could not connect to the recommendation service."})
 
 @tool
 def initiate_checkout(user_id: str, cart_id: str) -> str:

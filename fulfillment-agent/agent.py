@@ -53,4 +53,4 @@ def reserve_in_store_endpoint():
 if __name__ == '__main__':
     # Runs the web server on http://127.0.0.1:5001
     # We use port 5001 so it doesn't conflict with other potential services.
-    app.run(port=5001, debug=True)
+    app.run(port=5001, debug=False)
