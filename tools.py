@@ -64,13 +64,29 @@ def get_recommendations(user_id: str, context: str, count: int = 3) -> str:
         return json.dumps({"status": "error", "message": "Could not connect to the recommendation service."})
 
 @tool
-def initiate_checkout(user_id: str, cart_id: str) -> str:
+def initiate_checkout(user_id: str, cart_id: str, total_amount: float, currency: str = "INR") -> str:
     """
-    Initiates the payment process for a user's cart.
+    Initiates the payment process for a user's cart by calling the Payment Agent API.
+    Creates a secure payment session and returns a payment gateway URL.
     """
-    print(f"--- Calling Payment Agent ---")
-    print(f"Starting checkout for user {user_id} with cart {cart_id}")
-    return json.dumps({"status": "success", "paymentUrl": "https://example.com/pay"})
+    print(f"--- >>> CONTACTING LIVE PAYMENT AGENT <<< ---")
+
+    url = "http://127.0.0.1:5005/initiate-checkout"
+    payload = {
+        "userId": user_id,
+        "cartId": cart_id,
+        "totalAmount": total_amount,
+        "currency": currency
+    }
+
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return json.dumps(response.json())
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Payment Agent: {e}")
+        return json.dumps({"status": "error", "message": "Could not connect to the payment service."})
 
 @tool
 def reserve_in_store(user_id: str, product_id: str, store_id: str) -> str:
@@ -107,11 +123,25 @@ def get_applicable_offers(user_id: str, cart_id: str) -> str:
 @tool
 def get_order_status(order_id: str, user_id: str) -> str:
     """
-    Gets the status of a previously placed order.
+    Gets the status of a previously placed order by calling the Post-Purchase Support Agent API.
+    Returns tracking details, estimated delivery, and order status.
     """
-    print(f"--- Calling Post-Purchase Support Agent ---")
-    print(f"Checking status for order {order_id} for user {user_id}")
-    return json.dumps({"orderId": order_id, "status": "Shipped", "trackingLink": "https://example.com/track/123"})
+    print(f"--- >>> CONTACTING LIVE POST-PURCHASE AGENT <<< ---")
+
+    url = "http://127.0.0.1:5004/get-order-status"
+    payload = {
+        "orderId": order_id,
+        "userId": user_id
+    }
+
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return json.dumps(response.json())
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Post-Purchase Agent: {e}")
+        return json.dumps({"status": "error", "message": "Could not connect to the post-purchase support service."})
 
 all_tools = [
     check_inventory,
