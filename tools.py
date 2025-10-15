@@ -112,13 +112,28 @@ def reserve_in_store(user_id: str, product_id: str, store_id: str) -> str:
         return json.dumps({"status": "error", "message": "Could not connect to the fulfillment service."})
 
 @tool
-def get_applicable_offers(user_id: str, cart_id: str) -> str:
+def get_applicable_offers(user_id: str, cart_id: str, cart_amount: float = 0) -> str:
     """
-    Retrieves applicable offers and loyalty points for a user's cart.
+    Retrieves applicable offers, coupons, and loyalty points for a user's cart by calling the Loyalty Agent API.
+    Returns personalized offers based on user tier, available coupons, and loyalty point balance.
     """
-    print(f"--- Calling Loyalty & Offers Agent ---")
-    print(f"Fetching offers for user {user_id} and cart {cart_id}")
-    return json.dumps({"offers": ["20% OFF", "FREE_SHIPPING"]})
+    print(f"--- >>> CONTACTING LIVE LOYALTY & OFFERS AGENT <<< ---")
+
+    url = "http://127.0.0.1:5006/get-applicable-offers"
+    payload = {
+        "userId": user_id,
+        "cartId": cart_id,
+        "cartAmount": cart_amount
+    }
+
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return json.dumps(response.json())
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Loyalty & Offers Agent: {e}")
+        return json.dumps({"status": "error", "message": "Could not connect to the loyalty service."})
 
 @tool
 def get_order_status(order_id: str, user_id: str) -> str:
