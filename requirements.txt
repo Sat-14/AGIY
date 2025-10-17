@@ -27,3 +27,17 @@ python-json-logger>=2.0.7
 # Additional utilities
 pydantic>=2.5.0  # For data validation
 tenacity>=8.2.3  # For retry logic
+
+# Local LLM Support (Optional - for M1 Mac / RTX 3060)
+# Uncomment if using local LLMs instead of Ollama
+# torch>=2.1.0
+# transformers>=4.36.0
+# accelerate>=0.25.0
+# bitsandbytes>=0.41.0  # For 4-bit/8-bit quantization
+# peft>=0.7.0  # For LoRA/QLoRA fine-tuning
+# datasets>=2.15.0  # For training data
+# sentencepiece>=0.1.99  # For tokenization
+# protobuf>=3.20.0  # For model serialization
+
+# Note: For M1 Mac, use Ollama (recommended) or install torch with MPS support
+# For RTX 3060, install CUDA-enabled PyTorch

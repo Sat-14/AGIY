@@ -10,12 +10,20 @@ A sophisticated multi-agent conversational AI system for ABFRL (Aditya Birla Fas
 - 📈 **Prometheus Metrics** - Real-time performance monitoring and business analytics
 - 📝 **Structured Logging** - JSON logs with trace context propagation
 - 🐳 **Docker Monitoring Stack** - Complete observability infrastructure
+- 🤖 **Local LLMs for All Agents** - All 6 worker agents now support lightweight local LLMs
 
-**📚 Two Versions Available:**
+**🧠 Local LLM Integration:**
+- **6 Specialized Models** running on M1 8GB / RTX 3060
+- **Continuous Learning** via QLoRA fine-tuning
+- **Total Memory: ~5.6GB** (can run 2-3 agents simultaneously)
+- Models: TinyLlama, StableLM, Qwen 1.8B, Phi-2
+
+**📚 Three Versions Available:**
 - **Standard Version** (`main.py`) - Simple, minimal dependencies, perfect for development
 - **Enhanced Version** (`main_enhanced.py`) - Production-ready with full observability
+- **Local LLM Version** (`*_local_llm.py`) - All agents with on-device AI
 
-👉 **[Quick Start Guide](QUICK_START.md)** | **[Migration Guide](MIGRATION_GUIDE.md)** | **[Monitoring Setup](MONITORING_SETUP.md)**
+👉 **[Quick Start Guide](QUICK_START.md)** | **[Local LLM Setup](LOCAL_LLM_SETUP.md)** | **[Migration Guide](MIGRATION_GUIDE.md)** | **[Monitoring Setup](MONITORING_SETUP.md)**
 
 ---
 
