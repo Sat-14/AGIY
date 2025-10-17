@@ -2,6 +2,21 @@
 
 A sophisticated multi-agent conversational AI system for ABFRL (Aditya Birla Fashion and Retail) that demonstrates enterprise-grade AI architecture using specialized agents communicating via REST APIs.
 
+## 🆕 Latest Updates
+
+**✨ Production-Ready Features Added:**
+- 🗄️ **MongoDB Database Integration** - Persistent storage for conversations, user profiles, and inventory
+- 📊 **Distributed Tracing** - OpenTelemetry + Jaeger for end-to-end request tracking
+- 📈 **Prometheus Metrics** - Real-time performance monitoring and business analytics
+- 📝 **Structured Logging** - JSON logs with trace context propagation
+- 🐳 **Docker Monitoring Stack** - Complete observability infrastructure
+
+**📚 Two Versions Available:**
+- **Standard Version** (`main.py`) - Simple, minimal dependencies, perfect for development
+- **Enhanced Version** (`main_enhanced.py`) - Production-ready with full observability
+
+👉 **[Quick Start Guide](QUICK_START.md)** | **[Migration Guide](MIGRATION_GUIDE.md)** | **[Monitoring Setup](MONITORING_SETUP.md)**
+
 ---
 
 ## 📋 Table of Contents
@@ -11,10 +26,12 @@ A sophisticated multi-agent conversational AI system for ABFRL (Aditya Birla Fas
 - [Agent Specifications](#agent-specifications)
 - [Technology Stack](#technology-stack)
 - [Features](#features)
+- [MongoDB & Monitoring](#mongodb--monitoring)
 - [Setup Instructions](#setup-instructions)
 - [Usage](#usage)
 - [API Documentation](#api-documentation)
 - [System Flow](#system-flow)
+- [Monitoring & Observability](#monitoring--observability)
 - [Future Enhancements](#future-enhancements)
 
 ---
@@ -81,17 +98,33 @@ This mirrors real-world enterprise systems where different departments operate i
 
 ```
 Sales-Agent/
-├── main.py                          # Main Sales Agent (Ria)
+├── main.py                          # Main Sales Agent (Ria) - Standard
+├── main_enhanced.py                 # Enhanced with MongoDB & Monitoring
 ├── tools.py                         # Agent tool definitions
 ├── check_models.py                  # Gemini API validator
-├── requirements.txt                 # Python dependencies
-├── .env                            # Environment variables (API keys)
+├── requirements.txt                 # All dependencies
+├── .env.example                     # Environment template
+├── docker-compose.monitoring.yml    # Monitoring stack
+│
+├── database/                        # MongoDB Integration
+│   ├── __init__.py
+│   └── mongodb_config.py           # DB schemas & connection
+│
+├── monitoring/                      # Observability Stack
+│   ├── __init__.py
+│   ├── tracing.py                  # OpenTelemetry tracing
+│   ├── metrics.py                  # Prometheus metrics
+│   ├── logging_config.py           # Structured logging
+│   ├── prometheus_config.yml       # Prometheus config
+│   └── grafana_dashboard.json      # Grafana dashboard
 │
 ├── recommendation-agent/
-│   └── agent.py                    # Port 5002 - Recommendation service
+│   ├── agent.py                    # Port 5002 - Standard version
+│   └── agent_enhanced.py           # With MongoDB & monitoring
 │
 ├── inventory-agent/
-│   └── agent.py                    # Port 5003 - Inventory service
+│   ├── agent.py                    # Port 5003 - Standard version
+│   └── agent_enhanced.py           # With MongoDB & monitoring
 │
 ├── fulfillment-agent/
 │   └── agent.py                    # Port 5001 - Fulfillment service
@@ -100,9 +133,20 @@ Sales-Agent/
 │   └── agent.py                    # Port 5005 - Payment service
 │
 ├── post_purchase_agent/
-│   └── agent.py                    # Port 5004 - Post-purchase support service
+│   └── agent.py                    # Port 5004 - Post-purchase support
 │
-└── *.JSON                          # API contract specifications
+├── loyalty-agent/
+│   └── agent.py                    # Port 5006 - Loyalty service
+│
+├── *.JSON                          # API contract specifications
+│
+└── Documentation/
+    ├── README.md                   # This file
+    ├── ARCHITECTURE.md             # System architecture
+    ├── MONITORING_SETUP.md         # Monitoring guide
+    ├── MIGRATION_GUIDE.md          # Version comparison
+    ├── QUICK_START.md              # Quick start guide
+    └── PROJECT_SUMMARY.md          # Complete summary
 ```
 
 ---
@@ -482,16 +526,43 @@ POST http://127.0.0.1:5004/get-order-status
 | **Backend APIs** | Flask | Microservices for specialized agents |
 | **HTTP Client** | Requests | Inter-agent communication |
 | **Memory** | ConversationBufferMemory | Session state management |
+| **Database** | MongoDB | Persistent storage (Enhanced version) |
+| **Tracing** | OpenTelemetry + Jaeger | Distributed tracing (Enhanced version) |
+| **Metrics** | Prometheus + Grafana | Monitoring & visualization (Enhanced version) |
+| **Logging** | python-json-logger | Structured JSON logs (Enhanced version) |
 | **Language** | Python 3.13 | Primary programming language |
 
 ### Dependencies
 
+#### Standard Version (Minimal)
 ```
 langchain              # Agent framework
 langchain-google-genai # Google Gemini integration
 python-dotenv          # Environment variable management
 requests               # HTTP client for API calls
 flask                  # Web framework for agent APIs
+```
+
+#### Enhanced Version (Production-Ready)
+```
+# Core (Standard)
+langchain, langchain-google-genai, python-dotenv, requests, flask
+
+# MongoDB Integration
+pymongo>=4.6.0
+
+# Distributed Tracing (OpenTelemetry)
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-instrumentation-flask>=0.42b0
+opentelemetry-instrumentation-requests>=0.42b0
+opentelemetry-instrumentation-pymongo>=0.42b0
+opentelemetry-exporter-otlp>=1.21.0
+opentelemetry-exporter-jaeger>=1.21.0
+
+# Metrics & Logging
+prometheus-client>=0.19.0
+python-json-logger>=2.0.7
 ```
 
 ### Why These Technologies?
@@ -543,6 +614,101 @@ flask                  # Web framework for agent APIs
 -  Session management
 -  Error handling and retry logic
 -  Modular and extensible design
+
+### Enhanced Version Features (Production)
+-  📊 **MongoDB Database Integration**
+   - Persistent conversation history
+   - User profile storage with preferences and purchase history
+   - Product inventory management
+   - Order and transaction tracking
+   - Reservation management
+   - Automatic indexing and TTL caching
+
+-  🔍 **Distributed Tracing (OpenTelemetry)**
+   - End-to-end request tracing across all services
+   - Service dependency mapping
+   - Performance bottleneck identification
+   - Support for Jaeger, OTLP, and Console exporters
+
+-  📈 **Prometheus Metrics**
+   - HTTP request metrics (count, duration, size)
+   - Inter-agent call tracking
+   - Business metrics (recommendations, transactions, reservations)
+   - Database operation metrics
+   - System metrics (active sessions, cache hit rate)
+
+-  📝 **Structured Logging**
+   - JSON formatted logs with trace context
+   - Automatic trace ID/span ID propagation
+   - Sensitive data filtering
+   - Business event logging
+
+-  🐳 **Docker Monitoring Stack**
+   - MongoDB (database)
+   - Prometheus (metrics collection)
+   - Grafana (visualization dashboards)
+   - Jaeger (distributed tracing UI)
+   - Loki + Promtail (log aggregation)
+
+---
+
+## 🗄️ MongoDB & Monitoring
+
+### Database Collections
+
+The enhanced version uses MongoDB with the following schema:
+
+1. **user_profiles** - Customer data, preferences, loyalty tier
+2. **conversations** - Chat history with session management
+3. **inventory** - Products, stock levels, warehouses, stores
+4. **orders** - Order tracking and status
+5. **transactions** - Payment transaction records
+6. **reservations** - Store reservation tracking
+7. **recommendations_cache** - Cached recommendations (1hr TTL)
+
+### Monitoring Capabilities
+
+**Distributed Tracing (Jaeger)**
+- View complete request flow across all microservices
+- Identify performance bottlenecks
+- Debug errors with full context
+- Access at: http://localhost:16686
+
+**Metrics Dashboard (Grafana)**
+- Real-time performance monitoring
+- Business analytics (sales, recommendations)
+- Database operation metrics
+- Error tracking and alerting
+- Access at: http://localhost:3000
+
+**Metrics Endpoints**
+All enhanced agents expose Prometheus metrics at `/metrics`:
+- Sales Agent: http://localhost:8000/metrics
+- Recommendation: http://localhost:5002/metrics
+- Inventory: http://localhost:5003/metrics
+
+### Quick Start Options
+
+**Option 1: Standard Version (Simple)**
+```bash
+pip install langchain langchain-google-genai python-dotenv requests flask
+echo "GOOGLE_API_KEY=your_key" > .env
+python recommendation-agent/agent.py &
+python inventory-agent/agent.py &
+python main.py
+```
+
+**Option 2: Enhanced Version (Production)**
+```bash
+pip install -r requirements.txt
+docker-compose -f docker-compose.monitoring.yml up -d
+cp .env.example .env  # Edit with your settings
+python recommendation-agent/agent_enhanced.py &
+python inventory-agent/agent_enhanced.py &
+python main_enhanced.py
+```
+
+See [QUICK_START.md](QUICK_START.md) for detailed instructions.
 
 ---
 
@@ -1061,36 +1227,123 @@ AI: "The Denim Trucker comes in blue and black"
 
 ---
 
+---
+
+## 📊 Monitoring & Observability
+
+### Available Monitoring (Enhanced Version)
+
+The enhanced version includes a complete observability stack:
+
+#### 1. Distributed Tracing (Jaeger)
+```bash
+# Access Jaeger UI
+http://localhost:16686
+
+# Features:
+- End-to-end request tracing
+- Service dependency graphs
+- Performance analysis
+- Error tracking with full context
+```
+
+#### 2. Metrics Dashboard (Grafana)
+```bash
+# Access Grafana
+http://localhost:3000
+Username: admin
+Password: admin123
+
+# Pre-built Dashboard Includes:
+- Total Requests per Service
+- Request Duration (P95 latency)
+- Error Rate by Service
+- Active User Sessions
+- Agent-to-Agent Call Flow
+- Database Operations
+- Business Metrics (Recommendations, Transactions, Reservations)
+- Cache Hit Rate
+```
+
+#### 3. Metrics Collection (Prometheus)
+```bash
+# Access Prometheus
+http://localhost:9090
+
+# Metrics Endpoints:
+- http://localhost:5002/metrics (Recommendation Agent)
+- http://localhost:5003/metrics (Inventory Agent)
+```
+
+#### 4. Database (MongoDB)
+```bash
+# Connection
+mongodb://localhost:27017
+
+# Collections:
+- user_profiles
+- conversations
+- inventory
+- orders
+- transactions
+- reservations
+- recommendations_cache
+```
+
+### Setting Up Monitoring
+
+```bash
+# 1. Start monitoring stack
+docker-compose -f docker-compose.monitoring.yml up -d
+
+# 2. Verify services
+docker ps
+
+# 3. Access dashboards
+# Grafana: http://localhost:3000
+# Jaeger: http://localhost:16686
+# Prometheus: http://localhost:9090
+
+# 4. Import Grafana dashboard
+# Upload monitoring/grafana_dashboard.json
+```
+
+See [MONITORING_SETUP.md](MONITORING_SETUP.md) for complete guide.
+
+---
+
 ## 🔮 Future Enhancements
 
-### Phase 1: Data Persistence
-- [ ] PostgreSQL/MongoDB for user profiles
-- [ ] Redis for session caching
-- [ ] Persistent reservation storage
-- [ ] Order history database
+### Phase 1: Data Persistence ✅ COMPLETED
+- [x] MongoDB for user profiles
+- [x] MongoDB for conversation history
+- [x] Persistent reservation storage
+- [x] Order history database
+- [x] Transaction tracking
 
-### Phase 2: Advanced AI Features
+### Phase 2: Observability ✅ COMPLETED
+- [x] Distributed tracing (OpenTelemetry + Jaeger)
+- [x] Metrics collection (Prometheus)
+- [x] Visualization dashboards (Grafana)
+- [x] Structured logging with trace context
+- [x] Docker monitoring stack
+
+### Phase 3: Advanced AI Features
 - [ ] Vector database for semantic search
 - [ ] RAG (Retrieval Augmented Generation) for product knowledge
 - [ ] Sentiment analysis for customer satisfaction
 - [ ] Multi-language support
+- [ ] Voice interface integration
 
-### Phase 3: Enterprise Features
+### Phase 4: Enterprise Features
 - [ ] Authentication & authorization (JWT)
 - [ ] Rate limiting and API quotas
-- [ ] Logging and monitoring (ELK stack)
-- [ ] Analytics dashboard
-- [ ] A/B testing framework
-
-### Phase 4: Integration
-- [ ] Payment gateway integration
-- [ ] Shipping provider APIs
+- [ ] Real payment gateway integration
 - [ ] Email/SMS notifications
 - [ ] CRM system integration
-- [ ] Analytics and BI tools
 
 ### Phase 5: Scalability
-- [ ] Containerization (Docker)
+- [x] Containerization (Docker) - Partially done
 - [ ] Kubernetes orchestration
 - [ ] Load balancing
 - [ ] Horizontal scaling
@@ -1223,8 +1476,24 @@ For questions or support regarding this system, please contact the development t
 - **LangChain**: Agent framework and orchestration
 - **Google Gemini**: Large Language Model
 - **Flask**: Microservices framework
+- **MongoDB**: Database for persistence
+- **OpenTelemetry**: Distributed tracing
+- **Prometheus & Grafana**: Metrics and visualization
+- **Jaeger**: Tracing UI
 - **ABFRL**: Business use case and requirements
 
 ---
 
-**Built with  for the future of AI-powered retail**
+## 📚 Additional Documentation
+
+- **[Quick Start Guide](QUICK_START.md)** - Get started in 2 minutes
+- **[Migration Guide](MIGRATION_GUIDE.md)** - Standard vs Enhanced comparison
+- **[Monitoring Setup](MONITORING_SETUP.md)** - Complete observability guide
+- **[Architecture](ARCHITECTURE.md)** - System design and architecture
+- **[Project Summary](PROJECT_SUMMARY.md)** - Complete feature summary
+
+---
+
+**Built with ❤️ for the future of AI-powered retail**
+
+*Production-ready with MongoDB, distributed tracing, and comprehensive monitoring* 🚀

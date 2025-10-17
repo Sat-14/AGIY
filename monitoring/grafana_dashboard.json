@@ -1,0 +1,132 @@
+{
+  "dashboard": {
+    "title": "Sales Agent Multi-Service Dashboard",
+    "tags": ["sales-agent", "microservices", "ai"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Requests per Service",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[5m])) by (service)",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Request Duration (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le))",
+            "legendFormat": "{{service}} - P95"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(errors_total[5m])) by (service, error_type)",
+            "legendFormat": "{{service}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Active Sessions",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "active_sessions",
+            "legendFormat": "Active Sessions"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Agent Call Flow",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(agent_calls_total[5m])) by (source_agent, target_agent)",
+            "legendFormat": "{{source_agent}} → {{target_agent}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Database Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(database_operations_total[5m])) by (collection, operation)",
+            "legendFormat": "{{collection}} - {{operation}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Business Metrics - Recommendations",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(recommendations_generated_total[1h]))",
+            "legendFormat": "Recommendations (1h)"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 24}
+      },
+      {
+        "id": 8,
+        "title": "Business Metrics - Transactions",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(transactions_completed_total[1h]))",
+            "legendFormat": "Transactions (1h)"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 24}
+      },
+      {
+        "id": 9,
+        "title": "Business Metrics - Reservations",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(reservations_made_total[1h]))",
+            "legendFormat": "Reservations (1h)"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 24}
+      },
+      {
+        "id": 10,
+        "title": "Cache Hit Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "avg(cache_hit_rate) by (cache_type)",
+            "legendFormat": "{{cache_type}}"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 24}
+      }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 30,
+    "version": 1
+  }
+}

@@ -1,0 +1,96 @@
+# Prometheus Configuration for Sales Agent Monitoring
+# Save this file as prometheus.yml and run: prometheus --config.file=prometheus.yml
+
+global:
+  scrape_interval: 15s      # Scrape metrics every 15 seconds
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds
+
+  # Attach labels to all time series
+  external_labels:
+    monitor: 'sales-agent-monitor'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - 'localhost:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Sales Agent (Main)
+  - job_name: 'sales-agent'
+    static_configs:
+      - targets: ['localhost:8000']  # Add /metrics endpoint to main agent
+        labels:
+          service: 'sales-agent'
+          agent_type: 'orchestrator'
+
+  # Recommendation Agent
+  - job_name: 'recommendation-agent'
+    static_configs:
+      - targets: ['localhost:5002']
+        labels:
+          service: 'recommendation-agent'
+          agent_type: 'microservice'
+
+  # Inventory Agent
+  - job_name: 'inventory-agent'
+    static_configs:
+      - targets: ['localhost:5003']
+        labels:
+          service: 'inventory-agent'
+          agent_type: 'microservice'
+
+  # Fulfillment Agent
+  - job_name: 'fulfillment-agent'
+    static_configs:
+      - targets: ['localhost:5001']
+        labels:
+          service: 'fulfillment-agent'
+          agent_type: 'microservice'
+
+  # Post-Purchase Agent
+  - job_name: 'post-purchase-agent'
+    static_configs:
+      - targets: ['localhost:5004']
+        labels:
+          service: 'post-purchase-agent'
+          agent_type: 'microservice'
+
+  # Payment Agent
+  - job_name: 'payment-agent'
+    static_configs:
+      - targets: ['localhost:5005']
+        labels:
+          service: 'payment-agent'
+          agent_type: 'microservice'
+
+  # Loyalty Agent
+  - job_name: 'loyalty-agent'
+    static_configs:
+      - targets: ['localhost:5006']
+        labels:
+          service: 'loyalty-agent'
+          agent_type: 'microservice'
+
+  # MongoDB Exporter (if using mongodb_exporter)
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['localhost:9216']
+        labels:
+          service: 'mongodb'
+          component: 'database'
+
+  # Node Exporter (system metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          service: 'node-exporter'
+          component: 'infrastructure'
