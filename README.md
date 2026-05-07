@@ -2,34 +2,34 @@
 
 A sophisticated multi-agent conversational AI system for ABFRL (Aditya Birla Fashion and Retail) that demonstrates enterprise-grade AI architecture using specialized agents communicating via REST APIs.
 
-## 🆕 Latest Updates
+## Latest Updates
 
-**✨ Production-Ready Features Added:**
-- 🗄️ **MongoDB Database Integration** - Persistent storage for conversations, user profiles, and inventory
-- 📊 **Distributed Tracing** - OpenTelemetry + Jaeger for end-to-end request tracking
-- 📈 **Prometheus Metrics** - Real-time performance monitoring and business analytics
-- 📝 **Structured Logging** - JSON logs with trace context propagation
-- 🐳 **Docker Monitoring Stack** - Complete observability infrastructure
-- 🤖 **Local LLMs for All Agents** - All 6 worker agents now support lightweight local LLMs
+** Production-Ready Features Added:**
+-  **MongoDB Database Integration** - Persistent storage for conversations, user profiles, and inventory
+-  **Distributed Tracing** - OpenTelemetry + Jaeger for end-to-end request tracking
+-  **Prometheus Metrics** - Real-time performance monitoring and business analytics
+-  **Structured Logging** - JSON logs with trace context propagation
+-  **Docker Monitoring Stack** - Complete observability infrastructure
+-  **Local LLMs for All Agents** - All 6 worker agents now support lightweight local LLMs
 
-**🧠 Local LLM Integration:**
+** Local LLM Integration:**
 - **6 Specialized Models** running on M1 8GB / RTX 3060
 - **Continuous Learning** via QLoRA fine-tuning
 - **Total Memory: ~5.6GB** (can run 2-3 agents simultaneously)
 - Models: TinyLlama, StableLM, Qwen 1.8B, Phi-2
 # Local LLM Implementation Summary
 
-## 🎯 **Objective Achieved**
+##  **Objective Achieved**
 
 Successfully implemented **ultra-lightweight local LLMs** for Sales Agent with:
-- ✅ **Runs on MacBook M1 8GB** (unified memory)
-- ✅ **Runs on RTX 3060 6GB** VRAM
-- ✅ **Continuous improvement** via QLoRA fine-tuning
-- ✅ **Can train while serving** requests
+-  **Runs on MacBook M1 8GB** (unified memory)
+-  **Runs on RTX 3060 6GB** VRAM
+-  **Continuous improvement** via QLoRA fine-tuning
+-  **Can train while serving** requests
 
 ---
 
-## 📊 **Model Architecture**
+##  **Model Architecture**
 
 ### Main Sales Agent
 - **Uses:** Google Gemini Pro (cloud)
@@ -50,7 +50,7 @@ Successfully implemented **ultra-lightweight local LLMs** for Sales Agent with:
 
 ---
 
-## 🏗️ **Architecture**
+##  **Architecture**
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -80,7 +80,7 @@ Successfully implemented **ultra-lightweight local LLMs** for Sales Agent with:
 
 ---
 
-## 💾 **Memory Footprint**
+##  **Memory Footprint**
 
 ### MacBook M1 8GB
 
