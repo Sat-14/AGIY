@@ -1,0 +1,174 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sales-agent
+  namespace: multi-agent-sales
+  labels:
+    app: sales-agent
+    tier: orchestrator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sales-agent
+  template:
+    metadata:
+      labels:
+        app: sales-agent
+        tier: orchestrator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+    spec:
+      containers:
+        - name: sales-agent
+          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/sales-agent:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-secrets
+                  key: gemini-api-key
+            - name: TRACE_EXPORTER
+              value: "otlp"
+            - name: OTLP_ENDPOINT
+              value: "http://jaeger.observability.svc:4317"
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: mongodb-uri
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-agent
+  namespace: multi-agent-sales
+  labels:
+    app: recommendation-agent
+    tier: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: recommendation-agent
+  template:
+    metadata:
+      labels:
+        app: recommendation-agent
+        tier: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5002"
+    spec:
+      containers:
+        - name: recommendation-agent
+          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/recommendation-agent:latest
+          ports:
+            - containerPort: 5002
+              name: http
+          env:
+            - name: INFERENCE_STRATEGY
+              value: "edge_first"
+            - name: TRACE_EXPORTER
+              value: "otlp"
+            - name: OTLP_ENDPOINT
+              value: "http://jaeger.observability.svc:4317"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "2Gi"
+              nvidia.com/gpu: "0"
+            limits:
+              cpu: "1000m"
+              memory: "6Gi"
+              nvidia.com/gpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5002
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-agent
+  namespace: multi-agent-sales
+  labels:
+    app: inventory-agent
+    tier: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: inventory-agent
+  template:
+    metadata:
+      labels:
+        app: inventory-agent
+        tier: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5003"
+    spec:
+      containers:
+        - name: inventory-agent
+          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/inventory-agent:latest
+          ports:
+            - containerPort: 5003
+              name: http
+          env:
+            - name: INFERENCE_STRATEGY
+              value: "edge_first"
+            - name: TRACE_EXPORTER
+              value: "otlp"
+            - name: OTLP_ENDPOINT
+              value: "http://jaeger.observability.svc:4317"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "2Gi"
+            limits:
+              cpu: "1000m"
+              memory: "6Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5003
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5003
+            initialDelaySeconds: 30
+            periodSeconds: 10

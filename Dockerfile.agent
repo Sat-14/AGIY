@@ -1,0 +1,35 @@
+FROM python:3.11-slim AS base
+
+ARG AGENT_NAME=recommendation
+
+WORKDIR /app
+
+# Install system dependencies for ML models
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy shared modules
+COPY monitoring/ ./monitoring/
+COPY database/ ./database/
+COPY local_llm/ ./local_llm/
+
+# Copy agent-specific code
+COPY ${AGENT_NAME}-agent/ ./${AGENT_NAME}-agent/
+
+# Set environment for edge inference
+ENV INFERENCE_STRATEGY=edge_first
+ENV AGENT_NAME=${AGENT_NAME}
+
+# Expose agent port (mapped per agent in k8s service)
+EXPOSE 5000-5006
+
+HEALTHCHECK --interval=30s --timeout=15s --retries=3 \
+    CMD python -c "import requests; requests.get(f'http://localhost:{os.environ.get(\"PORT\", 5002)}/health')" || exit 1
+
+CMD python ${AGENT_NAME}-agent/agent_enhanced.py

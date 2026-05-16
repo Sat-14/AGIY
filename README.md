@@ -1,2253 +1,537 @@
-# Multi-Agent Fashion Retail AI System
+# Multi-Agent Sales System (AGIY)
 
-A sophisticated multi-agent conversational AI system for ABFRL (Aditya Birla Fashion and Retail) that demonstrates enterprise-grade AI architecture using specialized agents communicating via REST APIs.
+Distributed multi-agent AI system for fashion retail, built with LangChain-orchestrated LLM meshes, edge-optimized 4-bit inference, and production-grade Kubernetes deployment with full observability.
 
-## Latest Updates
-
-** Production-Ready Features Added:**
--  **MongoDB Database Integration** - Persistent storage for conversations, user profiles, and inventory
--  **Distributed Tracing** - OpenTelemetry + Jaeger for end-to-end request tracking
--  **Prometheus Metrics** - Real-time performance monitoring and business analytics
--  **Structured Logging** - JSON logs with trace context propagation
--  **Docker Monitoring Stack** - Complete observability infrastructure
--  **Local LLMs for All Agents** - All 6 worker agents now support lightweight local LLMs
-
-** Local LLM Integration:**
-- **6 Specialized Models** running on M1 8GB / RTX 3060
-- **Continuous Learning** via QLoRA fine-tuning
-- **Total Memory: ~5.6GB** (can run 2-3 agents simultaneously)
-- Models: TinyLlama, StableLM, Qwen 1.8B, Phi-2
-# Local LLM Implementation Summary
-
-##  **Objective Achieved**
-
-Successfully implemented **ultra-lightweight local LLMs** for Sales Agent with:
--  **Runs on MacBook M1 8GB** (unified memory)
--  **Runs on RTX 3060 6GB** VRAM
--  **Continuous improvement** via QLoRA fine-tuning
--  **Can train while serving** requests
-
----
-
-##  **Model Architecture**
-
-### Main Sales Agent
-- **Uses:** Google Gemini Pro (cloud)
-- **Role:** Orchestrator and conversational AI
-- **Why:** Needs advanced reasoning for complex conversations
-
-### Recommendation Agent (Local LLM)
-- **Model:** TinyLlama 1.1B / Gemma 2B
-- **Memory:** 600MB (M1) / 1.5GB (RTX 3060)
-- **Purpose:** Product recommendations
-- **Training:** QLoRA fine-tuning on user feedback
-
-### Inventory Agent (Local LLM)
-- **Model:** StableLM 2 1.6B / Phi-3 Mini 3.8B
-- **Memory:** 1.1GB (M1) / 2.5GB (RTX 3060)
-- **Purpose:** Stock analysis and availability
-- **Training:** QLoRA fine-tuning on accuracy feedback
-
----
-
-##  **Architecture**
+## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│         Main Sales Agent (Gemini)           │
-│         - Conversation handling             │
-│         - Tool orchestration                │
-│         - Complex reasoning                 │
-└────────────┬───────────────┬────────────────┘
-             │               │
-             ▼               ▼
-  ┌──────────────────┐  ┌──────────────────┐
-  │ Recommendation   │  │  Inventory       │
-  │ Agent (Local)    │  │  Agent (Local)   │
-  │                  │  │                  │
-  │ TinyLlama 1.1B   │  │ StableLM 1.6B    │
-  │ + QLoRA          │  │ + QLoRA          │
-  └──────────────────┘  └──────────────────┘
-          │                      │
-          ▼                      ▼
-  ┌──────────────────────────────────────┐
-  │     Continuous Improvement           │
-  │  - Feedback Collection               │
-  │  - Auto Fine-tuning (QLoRA)          │
-  │  - LoRA Adapter Updates              │
-  └──────────────────────────────────────┘
-```
-
----
-
-##  **Memory Footprint**
-
-### MacBook M1 8GB
-
-| Component | Memory | Details |
-|-----------|--------|---------|
-| **TinyLlama (Rec)** | 600MB | 4-bit quantized |
-| **StableLM (Inv)** | 1.1GB | 4-bit quantized |
-| **LoRA Adapters** | 30MB | Per model |
-| **Inference Buffer** | 200MB | Runtime |
-| **Training (QLoRA)** | +2GB | When retraining |
-| **Total (serving)** | ~2GB | 6GB free |
-| **Total (training)** | ~4GB | 4GB free |
-
-### RTX 3060 6GB
-
-| Component | VRAM | Details |
-|-----------|------|---------|
-| **Gemma 2B (Rec)** | 1.5GB | 4-bit quantized |
-| **Phi-3 Mini (Inv)** | 2.5GB | 4-bit quantized |
-| **Total (serving)** | ~4GB | 2GB free |
-
----
-
-## 📂 **Files Created**
-
-### Core LLM Infrastructure
-1. **`local_llm/model_config.py`** - Model configurations for RTX 3060/M1
-2. **`local_llm/m1_optimized_config.py`** - M1-specific optimizations
-3. **`local_llm/llm_manager.py`** - LLM loading and inference manager
-4. **`local_llm/training_pipeline.py`** - QLoRA fine-tuning pipeline
-
-### Agent Implementations
-5. **`recommendation-agent/agent_local_llm.py`** - Recommendation with local LLM
-6. **`inventory-agent/agent_local_llm.py`** - Inventory with local LLM
-
-### Setup Scripts
-7. **`local_llm/setup_ollama.sh`** - Ollama setup for macOS/Linux
-8. **`local_llm/setup_ollama.bat`** - Ollama setup for Windows
-
-### Documentation
-9. **`LOCAL_LLM_SETUP.md`** - Complete setup guide
-10. **`LOCAL_LLM_SUMMARY.md`** - This file
-
----
-
-## 🚀 **Quick Start**
-
-### Option 1: Ollama (Recommended for M1)
-
-```bash
-# Install and setup Ollama
-./local_llm/setup_ollama.sh  # macOS/Linux
-# OR
-local_llm\setup_ollama.bat   # Windows
-
-# Start agents
-python recommendation-agent/agent_local_llm.py  # Port 5002
-python inventory-agent/agent_local_llm.py       # Port 5003
-```
-
-### Option 2: HuggingFace (For advanced users)
-
-```bash
-# Install dependencies
-pip install torch transformers accelerate bitsandbytes peft
-
-# Run agents (auto-downloads models)
-python recommendation-agent/agent_local_llm.py
-python inventory-agent/agent_local_llm.py
-```
-
----
-
-## 🔄 **Continuous Improvement**
-
-### How It Works
-
-1. **Feedback Collection**
-   - User interactions tracked via `/feedback` endpoint
-   - Ratings (1-5 scale) and actions (clicked/purchased/ignored)
-   - Stored in `data/feedback/{agent}.jsonl`
-
-2. **Quality Filtering**
-   - Only high-quality feedback (rating ≥ 4) used for training
-   - Manual corrections can be provided
-   - Automatic deduplication
-
-3. **Auto-Training Trigger**
-   - Threshold: 50-100 feedbacks
-   - Runs QLoRA fine-tuning automatically
-   - Updates LoRA adapters only (~30MB)
-
-4. **Hot Reload**
-   - New adapters loaded without restart
-   - Zero downtime
-   - Gradual quality improvement
-
-### Training Performance
-
-**MacBook M1 8GB:**
-- Training Time: 25-35 min for 100 samples
-- Memory: ~2GB during training
-- Can train 1 model at a time
-
-**RTX 3060 6GB:**
-- Training Time: 15-20 min for 100 samples
-- Memory: ~2GB during training
-- Can train while serving other model
-
----
-
-## 📈 **API Endpoints**
-
-### Recommendation Agent (Local LLM)
-
-```bash
-# Get recommendations (LLM-powered)
-POST http://localhost:5002/get-recommendations
-{
-  "user_id": "user_123",
-  "context": "casual blue jacket",
-  "count": 3
-}
-
-# Submit feedback
-POST http://localhost:5002/feedback
-{
-  "user_id": "user_123",
-  "recommendation_id": "SKU_JCK_01",
-  "rating": 5,
-  "action": "purchased"
-}
-
-# Get model stats
-GET http://localhost:5002/model-stats
-```
-
-### Inventory Agent (Local LLM)
-
-```bash
-# Check inventory (LLM-analyzed)
-POST http://localhost:5003/check-inventory
-{
-  "product_id": "SKU_JCK_01",
-  "location_context": {"city": "Delhi"}
-}
-
-# Submit feedback
-POST http://localhost:5003/feedback
-{
-  "product_id": "SKU_JCK_01",
-  "rating": 4
-}
-```
-
----
-
-## 🧪 **Testing**
-
-### Test Ollama Models
-
-```bash
-# TinyLlama (Recommendation)
-ollama run tinyllama "Recommend 2 jackets for casual style"
-
-# StableLM (Inventory)
-ollama run stablelm2:1.6b "Check stock for product SKU_JCK_01"
-```
-
-### Test API
-
-```bash
-# Test recommendation
-curl -X POST http://localhost:5002/get-recommendations \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"test","context":"jacket","count":3}'
-
-# Test inventory
-curl -X POST http://localhost:5003/check-inventory \
-  -H "Content-Type: application/json" \
-  -d '{"product_id":"SKU_JCK_01"}'
-```
-
----
-
-## 📊 **Performance Benchmarks**
-
-| Metric | M1 8GB | RTX 3060 |
-|--------|--------|----------|
-| **Inference Speed** | 40-50 tok/s | 70-80 tok/s |
-| **Memory Usage** | 1.7GB total | 4GB total |
-| **Training Time** | 30min/100 samples | 15min/100 samples |
-| **Quality** | 7-8/10 | 8-9/10 |
-| **Concurrent Models** | 2-3 | 2 |
-
----
-
-## 🔑 **Key Features**
-
-### 1. Ultra-Lightweight
-- Models: 1.1B - 3.8B parameters
-- Memory: 600MB - 2.5GB per model
-- Can run multiple models on M1 8GB
-
-### 2. Continuous Improvement
-- Automatic feedback collection
-- QLoRA fine-tuning (lightweight)
-- No full model retraining needed
-- Adapters update in ~30 minutes
-
-### 3. Production-Ready
-- Monitoring via Prometheus
-- Distributed tracing
-- Structured logging
-- Error handling
-
-### 4. Hardware Optimized
-- M1: MPS backend + 4-bit quantization
-- RTX 3060: CUDA + Flash Attention
-- Gradient checkpointing for memory
-
----
-
-## 💡 **Why These Models?**
-
-### TinyLlama 1.1B
-✅ **Smallest** viable LLM (637MB)
-✅ **Fastest** inference on M1
-✅ Good for **creative** recommendations
-✅ Active community support
-
-### StableLM 2 1.6B
-✅ Better **accuracy** than TinyLlama
-✅ Still **lightweight** (1.1GB)
-✅ Excellent for **factual** tasks
-✅ Stability AI backing
-
-### Gemma 2B / Phi-3 Mini
-✅ **Higher quality** (when VRAM available)
-✅ Google/Microsoft support
-✅ Regular updates
-✅ Strong performance
-
----
-
-## 🔮 **Future Enhancements**
-
-### Short Term
-- [ ] Add more agent types with local LLMs
-- [ ] Implement model distillation pipeline
-- [ ] Add A/B testing framework
-- [ ] Real-time model performance dashboard
-
-### Long Term
-- [ ] Multi-model ensemble
-- [ ] Federated learning across instances
-- [ ] Automatic model selection based on VRAM
-- [ ] Edge deployment (on-device inference)
-
----
-
-## 📚 **Documentation**
-
-- **Setup Guide:** [LOCAL_LLM_SETUP.md](LOCAL_LLM_SETUP.md)
-- **Model Config:** `local_llm/model_config.py`
-- **M1 Optimizations:** `local_llm/m1_optimized_config.py`
-- **Training Pipeline:** `local_llm/training_pipeline.py`
-
----
-
-## ✅ **Summary**
-
-**What Was Built:**
-1. ✅ Ultra-lightweight LLM infrastructure for M1 8GB / RTX 3060
-2. ✅ 2 agents (Recommendation & Inventory) with local LLMs
-3. ✅ Continuous improvement via QLoRA fine-tuning
-4. ✅ Feedback collection and auto-training system
-5. ✅ Complete setup scripts for macOS/Linux/Windows
-6. ✅ Ollama integration for easy deployment
-
-**Key Metrics:**
-- **Total Memory:** <2GB (M1) / <4GB (RTX 3060)
-- **Setup Time:** 15 minutes
-- **Training Time:** 30 minutes per model
-- **Can train & serve:** Simultaneously
-
-**Production Ready:** Yes, with monitoring, metrics, and structured logging! 🚀
-
-
-**📚 Three Versions Available:**
-- **Standard Version** (`main.py`) - Simple, minimal dependencies, perfect for development
-- **Enhanced Version** (`main_enhanced.py`) - Production-ready with full observability
-- **Local LLM Version** (`*_local_llm.py`) - All agents with on-device AI
-
-👉 **[Quick Start Guide](QUICK_START.md)** | **[Local LLM Setup](LOCAL_LLM_SETUP.md)** | **[Migration Guide](MIGRATION_GUIDE.md)** | **[Monitoring Setup](MONITORING_SETUP.md)**
-
----
-
-## 📋 Table of Contents
-
-- [System Overview](#system-overview)
-- [Architecture](#architecture)
-- [Agent Specifications](#agent-specifications)
-- [Technology Stack](#technology-stack)
-- [Features](#features)
-- [MongoDB & Monitoring](#mongodb--monitoring)
-- [Setup Instructions](#setup-instructions)
-- [Usage](#usage)
-- [API Documentation](#api-documentation)
-- [System Flow](#system-flow)
-- [Monitoring & Observability](#monitoring--observability)
-- [Future Enhancements](#future-enhancements)
-
----
-
-## 🎯 System Overview
-
-This project implements a **multi-agent AI system** where specialized agents handle different aspects of the e-commerce customer journey. The system uses a **microservices architecture** where each agent is an independent service that communicates via REST APIs.
-
-### Key Concept
-
-Instead of a monolithic AI system, we have:
-- **1 Main Conversational Agent** (Sales Agent - "Ria") that orchestrates everything
-- **5 Specialized Backend Agents** that handle specific domain tasks:
-  - Recommendation Agent (Product discovery)
-  - Inventory Agent (Stock management)
-  - Fulfillment Agent (Store reservations)
-  - Payment Agent (Checkout processing)
-  - Post-Purchase Agent (Order tracking & returns)
-- **Agent-to-Agent Communication** via HTTP REST APIs
-
-This mirrors real-world enterprise systems where different departments operate independently but communicate seamlessly.
-
----
-
-## 🏗️ Architecture
-
-### High-Level Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         USER                                │
-│                     (CLI Interface)                         │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   SALES AGENT (Ria)                         │
-│              LangChain + Google Gemini                      │
-│           ┌─────────────────────────────┐                   │
-│           │  Conversation Memory        │                   │
-│           │  Tool Selection Logic       │                   │
-│           │  Context Management         │                   │
-│           └─────────────────────────────┘                   │
-└───┬─────────┬──────────┬──────────┬──────────┬─────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│                          USER (CLI / API)                              │
+└──────────────────────────────┬────────────────────────────────────────┘
+                               ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│              SALES AGENT (LangChain + Gemini Pro)                      │
+│         Orchestrator │ Memory │ Tool Selection │ Routing               │
+└───┬─────���───┬──────────┬──────────┬──────────┬───────────────────────┘
     │         │          │          │          │
     │ REST    │ REST     │ REST     │ REST     │ REST
-    │ 5002    │ 5003     │ 5001     │ 5005     │ 5004
     ▼         ▼          ▼          ▼          ▼
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│Recom-  │ │Inven-  │ │Fulfill-│ │Payment │ │Post-   │
-│mend    │ │tory    │ │ment    │ │Agent   │ │Purchase│
-│Agent   │ │Agent   │ │Agent   │ │        │ │Agent   │
-└────────┘ └────────┘ └────────┘ └────────┘ └────────┘
-     │          │          │          │          │
-     ▼          ▼          ▼          ▼          ▼
-┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
-│User     │ │Warehouse│ │Store    │ │Payment  │ │Order    │
-│Profile  │ │Database │ │System   │ │Gateway  │ │Tracking │
-│DB       │ │         │ │         │ │         │ │System   │
-└─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘
-```
-
-### Directory Structure
-
-```
-Sales-Agent/
-├── main.py                          # Main Sales Agent (Ria) - Standard
-├── main_enhanced.py                 # Enhanced with MongoDB & Monitoring
-├── tools.py                         # Agent tool definitions
-├── check_models.py                  # Gemini API validator
-├── requirements.txt                 # All dependencies
-├── .env.example                     # Environment template
-├── docker-compose.monitoring.yml    # Monitoring stack
-│
-├── database/                        # MongoDB Integration
-│   ├── __init__.py
-│   └── mongodb_config.py           # DB schemas & connection
-│
-├── monitoring/                      # Observability Stack
-│   ├── __init__.py
-│   ├── tracing.py                  # OpenTelemetry tracing
-│   ├── metrics.py                  # Prometheus metrics
-│   ├── logging_config.py           # Structured logging
-│   ├── prometheus_config.yml       # Prometheus config
-│   └── grafana_dashboard.json      # Grafana dashboard
-│
-├── recommendation-agent/
-│   ├── agent.py                    # Port 5002 - Standard version
-│   └── agent_enhanced.py           # With MongoDB & monitoring
-│
-├── inventory-agent/
-│   ├── agent.py                    # Port 5003 - Standard version
-│   └── agent_enhanced.py           # With MongoDB & monitoring
-│
-├── fulfillment-agent/
-│   └── agent.py                    # Port 5001 - Fulfillment service
-│
-├── payment-agent/
-│   └── agent.py                    # Port 5005 - Payment service
-│
-├── post_purchase_agent/
-│   └── agent.py                    # Port 5004 - Post-purchase support
-│
-├── loyalty-agent/
-│   └── agent.py                    # Port 5006 - Loyalty service
-│
-├── *.JSON                          # API contract specifications
-│
-└── Documentation/
-    ├── README.md                   # This file
-    ├── ARCHITECTURE.md             # System architecture
-    ├── MONITORING_SETUP.md         # Monitoring guide
-    ├── MIGRATION_GUIDE.md          # Version comparison
-    ├── QUICK_START.md              # Quick start guide
-    └── PROJECT_SUMMARY.md          # Complete summary
+┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐
+│Recom.  ││Inven.  ││Fulfill.││Payment │���Post-   │
+│Agent   ││Agent   ││Agent   ││Agent   ││Purchase│
+│:5002   ││:5003   ││:5001   ││:5005   ││:5004   │
+└───┬────┘└───┬────┘└────────┘└────────┘└────────┘
+    │         │
+    ▼         ▼
+┌──────────────────────────────────────┐
+│  Inference Router (Circuit Breaker)  │
+│  Gemini Pro ──failover─��► 4-bit Edge │
+└──────────────────────────────────────┘
+    │
+    ▼
+┌──────────────────────────────────────┐
+│  Edge Models (4-bit Quantized)       │
+│  TinyLlama │ StableLM │ Qwen │ Phi-2│
+│  QLoRA Fine-tuning + Hot Reload      │
+└──────────────────────────────────────┘
 ```
 
 ---
 
-## 🤖 Agent Specifications
+## Key Technical Highlights
 
-### 1. Sales Agent (Ria) - Main Orchestrator
+### 1. Distributed Multi-Agent LLM Mesh (LangChain + 4-bit Edge Models)
 
-**Technology:** LangChain + Google Gemini Pro
-**Type:** Conversational AI with tool-calling capabilities
-**Port:** N/A (CLI interface)
+Engineered multi-agent architecture with LangChain orchestrating 6 specialized agents communicating via REST, each backed by edge-optimized 4-bit quantized models.
 
-**Responsibilities:**
-- Natural language understanding and conversation
-- User intent recognition
-- Tool selection and orchestration
-- Context and memory management
-- Response generation
-
-**Key Features:**
-- **Memory System**: Maintains conversation history per user session using `ConversationBufferMemory`
-- **Tool Calling**: Automatically selects and invokes appropriate backend agents
-- **Context Awareness**: Understands multi-turn conversations
-- **User Session Management**: Stores and retrieves user conversation state
-
-**Implementation Details:**
 ```python
-# Uses LangChain's AgentExecutor with:
-- ChatGoogleGenerativeAI (LLM)
-- ConversationBufferMemory (Memory)
-- create_tool_calling_agent (Agent Framework)
-- 6 available tools connecting to specialized agents
+# main.py - LangChain Agent Mesh Orchestrator
+
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.memory import ConversationBufferMemory
+from tools import all_tools  # 6 agent tools via REST
+
+llm = ChatGoogleGenerativeAI(model="models/gemini-pro-latest", temperature=0)
+
+agent = create_tool_calling_agent(llm, all_tools, prompt)
+agent_executor = AgentExecutor(
+    agent=agent,
+    tools=all_tools,   # Recommendation, Inventory, Fulfillment, Payment, etc.
+    verbose=True,
+    memory=memory,
+)
 ```
 
----
-
-### 2. Recommendation Agent
-
-**Technology:** Flask REST API
-**Port:** 5002
-**Endpoint:** `/get-recommendations`
-
-**Core Functionality:**
-
-#### a) Customer Profile Analysis
 ```python
-{
-  "preferences": ["casual", "denim", "blue"],
-  "size": "M",
-  "purchase_history": ["SKU_TSH_01"],
-  "browsing_history": ["jackets", "shirts"]
-}
-```
-- Retrieves stored user preferences
-- Analyzes past purchase behavior
-- Considers browsing patterns
+# local_llm/model_config.py - 4-bit Edge Model Configurations
 
-#### b) Seasonal Trend Analysis
-```python
-- Winter (Dec-Feb): jackets, hoodies, sweaters
-- Spring (Mar-May): light jackets, t-shirts
-- Summer (Jun-Aug): summer wear, shorts
-- Fall (Sep-Nov): transitional wear, layering
-```
-- Dynamically adjusts recommendations based on current season
-- Promotes weather-appropriate products
-
-#### c) Context-Based Scoring Algorithm
-```python
-Score Calculation:
-- Context keyword match: +5 points
-- Tag match: +3 points
-- User preference match: +2 points
-- Seasonal relevance: +1 point
-```
-- Ranks products by relevance score
-- Returns top N products
-
-#### d) Bundle Suggestions
-```json
-{
-  "bundleName": "Complete Casual Look",
-  "products": ["SKU_JCK_01", "SKU_TSH_01", "SKU_CHN_01"],
-  "discount": "15% OFF",
-  "totalPrice": 8997
-}
-```
-
-**API Request:**
-```json
-POST http://127.0.0.1:5002/get-recommendations
-{
-  "user_id": "user_12345",
-  "context": "casual blue jacket",
-  "count": 3
-}
-```
-
-**API Response:**
-```json
-{
-  "status": "success",
-  "recommendations": [
-    {
-      "productId": "SKU_JCK_01",
-      "name": "Denim Trucker Jacket",
-      "price": {"amount": 4999, "currency": "INR"},
-      "imageUrl": "...",
-      "tags": ["casual", "denim", "blue"]
-    }
-  ],
-  "bundles": [...],
-  "promotions": ["NEW_USER_20", "SEASONAL_SALE"]
+RTX_3060_CONFIGS = {
+    "recommendation": LLMConfig(
+        model_name="google/gemma-2b-it",
+        model_type=ModelType.GEMMA_2B,
+        quantization="4bit",
+        max_tokens=384,
+        temperature=0.7,
+        gpu_memory_fraction=0.4,  # 2.4GB VRAM
+    ),
+    "inventory": LLMConfig(
+        model_name="microsoft/phi-3-mini-4k-instruct",
+        model_type=ModelType.PHI_3_MINI,
+        quantization="4bit",
+        max_tokens=256,
+        temperature=0.3,
+        gpu_memory_fraction=0.4,
+    ),
 }
 ```
 
 ---
 
-### 3. Inventory Agent
+### 2. QLoRA Fine-Tuning Pipeline (Dynamic LoRA Updates in 6GB VRAM)
 
-**Technology:** Flask REST API
-**Port:** 5003
-**Endpoint:** `/check-inventory`
+Architected QLoRA training pipeline with NF4 quantization, paged AdamW 8-bit optimizer, and gradient checkpointing — enabling continuous model improvement within 6GB VRAM constraints.
 
-**Core Functionality:**
+```
+  User Feedback ──► Feedback Store (JSONL)
+                         │
+              (threshold: 50 samples)
+                         ▼
+  ┌─────────────────────────────────────────┐
+  │  QLoRA Training Pipeline                │
+  │  Base Model (4-bit NF4) + LoRA(r=4)    │
+  │  Batch=1 │ GradAccum=8 │ fp16          │
+  │  paged_adamw_8bit │ grad_checkpoint    │
+  └────────────────────┬────────────────────┘
+                       ▼
+  LoRA Adapters (~30MB) ──��� Hot Reload (zero downtime)
+```
 
-#### a) Multi-Warehouse Inventory
 ```python
-Warehouses:
-- WH_NORTH (Delhi NCR) - 150 units
-- WH_SOUTH (Bangalore) - 80 units
-- WH_WEST (Mumbai) - 120 units
-- WH_EAST (Kolkata) - 60 units
-```
-- Real-time stock across regional distribution centers
-- Estimated shipping times per warehouse
+# local_llm/training_pipeline.py
 
-#### b) Physical Store Availability
+def setup_qlora_training(self):
+    """QLoRA setup for 6GB VRAM (RTX 3060 / M1 8GB)"""
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4"
+    )
+
+    model = AutoModelForCausalLM.from_pretrained(
+        self.base_model,
+        quantization_config=bnb_config,
+        device_map="auto",
+    )
+    model = prepare_model_for_kbit_training(model)
+
+    lora_config = LoraConfig(
+        r=4,                # Low rank for memory efficiency
+        lora_alpha=8,
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM",
+        target_modules=["q_proj", "v_proj", "k_proj", "o_proj"]
+    )
+    model = get_peft_model(model, lora_config)
+
+    training_args = TrainingArguments(
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=8,
+        learning_rate=2e-4,
+        fp16=True,
+        optim="paged_adamw_8bit",
+        gradient_checkpointing=True,
+    )
+    return model, tokenizer, training_args
+```
+
 ```python
-Stores:
-- Select Citywalk (Delhi) - 5 units (LOW)
-- DLF Promenade (Delhi) - 2 units (LOW)
-- Ambience Mall (Gurgaon) - 8 units (MEDIUM)
-- Phoenix Palladium (Mumbai) - 12 units (HIGH)
-- UB City Mall (Bangalore) - 6 units (MEDIUM)
-```
-- Stock levels with descriptors (high/medium/low)
-- Location-based filtering (city/region)
-- Complete store details (address, store ID)
+# local_llm/llm_manager.py - Dynamic LoRA Hot Reload
 
-#### c) Online Status Calculation
-```python
-Logic:
-- total_stock == 0 → "out_of_stock"
-- total_stock < 50 → "low_stock"
-- total_stock >= 50 → "in_stock"
-```
-
-#### d) Fulfillment Options
-```json
-[
-  {
-    "type": "ship_to_home",
-    "available": true,
-    "estimatedDelivery": "2025-10-18",
-    "shippingCost": 0
-  },
-  {
-    "type": "click_and_collect",
-    "available": true,
-    "availableStores": 2,
-    "message": "Reserve online and pick up from store"
-  },
-  {
-    "type": "in_store_purchase",
-    "available": true,
-    "availableStores": 5,
-    "message": "Try and buy at our stores"
-  }
-]
-```
-
-**API Request:**
-```json
-POST http://127.0.0.1:5003/check-inventory
-{
-  "product_id": "SKU_JCK_01",
-  "attributes": {"size": "M", "color": "blue"},
-  "location_context": {"city": "Delhi"}
-}
-```
-
-**API Response:**
-```json
-{
-  "status": "success",
-  "productId": "SKU_JCK_01",
-  "onlineStatus": "in_stock",
-  "onlineStockLevel": 410,
-  "warehouses": [...],
-  "availableStores": [...],
-  "fulfillmentOptions": [...],
-  "lastUpdated": "2025-10-15T11:43:19.575132"
-}
+# Load LoRA adapters if they exist (hot-swappable)
+if os.path.exists(self.lora_path):
+    self.model = PeftModel.from_pretrained(
+        self.model,
+        self.lora_path,
+        is_trainable=False
+    )
 ```
 
 ---
 
-### 4. Fulfillment Agent
+### 3. Intelligent LLM Inference Router (Gemini Pro → 4-bit Edge Failover)
 
-**Technology:** Flask REST API
-**Port:** 5001
-**Endpoint:** `/reserve-in-store`
+Created inference router with circuit breaker pattern, latency-aware routing, and graceful degradation from cloud Gemini Pro to local 4-bit quantized edge models.
 
-**Core Functionality:**
+```
+  Request ──► InferenceRouter
+                   │
+         ┌─────────┴─────────┐
+         ▼                   ▼
+  ┌─────────────┐     ┌─────────────┐
+  │ Gemini Pro  │     │ Edge 4-bit  │
+  │ (Cloud)     │     │ (Local)     │
+  └──────┬──────┘     └──────┬──────┘
+         │                   │
+         ▼                   ▼
+  Circuit Breaker    Circuit Breaker
+  (3 failures=OPEN)  (5 failures=OPEN)
+         │                   │
+         └──��──────┬─────────┘
+                   ▼
+           RouteDecision {provider, response, latency_ms}
+```
 
-#### In-Store Reservation System
 ```python
-Process:
-1. Receives reservation request
-2. Validates user_id, product_id, store_id
-3. Generates unique reservation ID
-4. Creates 24-hour hold on inventory
-5. (Would) Notify store staff
-```
+# local_llm/inference_router.py
 
-**Reservation ID Format:**
-```
-RES-{product_prefix}-{store_prefix}-{user_suffix}
-Example: RES-SKU_-STO-2345
-```
+class InferenceRouter:
+    """Routes between cloud (Gemini) and edge (4-bit) with circuit breaker"""
 
-**API Request:**
-```json
-POST http://127.0.0.1:5001/reserve-in-store
-{
-  "user_id": "user_12345",
-  "product_id": "SKU_JCK_01",
-  "store_id": "STORE_SCW_DL"
-}
-```
+    def __init__(self, agent_name, strategy=RouterStrategy.CLOUD_FIRST):
+        self.providers = {
+            "gemini": ProviderHealth(failure_threshold=3, recovery_timeout=60.0),
+            "edge": ProviderHealth(failure_threshold=5, recovery_timeout=30.0),
+        }
 
-**API Response:**
-```json
-{
-  "status": "success",
-  "reservationId": "RES-SKU_-STO-2345",
-  "confirmationMessage": "Your item has been reserved for 24 hours."
-}
-```
+    def _cloud_first_route(self, prompt, context):
+        """Try Gemini Pro first, gracefully failover to 4-bit edge model"""
+        if self._is_provider_available("gemini"):
+            result = self._invoke_gemini(prompt)
+            if result is not None:
+                return result
 
-**Future Enhancements:**
-- Database integration for persistent reservations
-- Email/SMS notifications to customers
-- Store staff notification system
-- Inventory deduction logic
-- Expiration handling after 24 hours
+        # Failover to edge (4-bit local model)
+        logger.warning(f"Gemini unavailable, failing over to edge model")
+        result = self._invoke_edge(prompt, context)
+        if result is not None:
+            result.fallback_used = True
+            return result
+
+    def _is_provider_available(self, provider):
+        """Circuit breaker: CLOSED→OPEN after N failures, HALF_OPEN after timeout"""
+        health = self.providers[provider]
+        if health.circuit_state == CircuitState.OPEN:
+            elapsed = time.time() - health.last_failure_time
+            if elapsed >= health.recovery_timeout:
+                health.circuit_state = CircuitState.HALF_OPEN
+                return True
+            return False
+        return True
+```
 
 ---
 
-### 5. Payment Agent
+### 4. OpenTelemetry Distributed Tracing + Prometheus Metrics
 
-**Technology:** Flask REST API
-**Port:** 5005
-**Endpoints:** `/initiate-checkout`, `/process-payment`, `/check-payment-status`
+Built full observability stack with OpenTelemetry spans propagating across all microservices, Prometheus counters/histograms for agent-to-agent calls, and Grafana dashboards.
 
-**Core Functionality:**
+```
+  Agent Request ──► OpenTelemetry Span
+                         ���
+      ┌──────────────────┼──────────────────┐
+      ▼                  ▼                  ▼
+  Sales Agent       Recom. Agent       Invent. Agent
+  (trace_id=X)      (trace_id=X)       (trace_id=X)
+      │                  │                  │
+      ▼                  ▼                  ▼
+  ┌──────────┐    ┌──────────┐    ┌──────────┐
+  │ Jaeger   │    │Prometheus│    │ Grafana  │
+  │ :16686   │    │ :9090    │    │ :3000    │
+  └──────────┘    └──────────┘    └──────────┘
+```
 
-#### Payment Session Creation
 ```python
-Process:
-1. Receives checkout request with userId, cartId, amount
-2. Generates unique transaction ID (TXN-YYYYMMDDHHMMSS-XXXX)
-3. Creates payment gateway URL
-4. Stores transaction in memory
-5. Returns payment session details
+# monitoring/tracing.py
+
+class TracingManager:
+    """OpenTelemetry distributed tracing across agent mesh"""
+
+    def _setup_tracing(self):
+        resource = Resource(attributes={
+            SERVICE_NAME: self.service_name,
+            SERVICE_VERSION: self.service_version,
+        })
+        self.tracer_provider = TracerProvider(resource=resource)
+
+        if exporter_type == "jaeger":
+            jaeger_exporter = JaegerExporter(
+                agent_host_name=os.getenv("JAEGER_HOST", "localhost"),
+                agent_port=int(os.getenv("JAEGER_PORT", 6831)),
+            )
+            self.tracer_provider.add_span_processor(
+                BatchSpanProcessor(jaeger_exporter)
+            )
+        elif exporter_type == "otlp":
+            otlp_exporter = OTLPSpanExporter(
+                endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4317"),
+            )
+            self.tracer_provider.add_span_processor(
+                BatchSpanProcessor(otlp_exporter)
+            )
 ```
 
-**Transaction ID Format:**
-```
-TXN-{timestamp}-{random_4_digits}
-Example: TXN-20251015121134-0571
-```
-
-**API Request:**
-```json
-POST http://127.0.0.1:5005/initiate-checkout
-{
-  "userId": "user_12345",
-  "cartId": "CART_001",
-  "totalAmount": 4999,
-  "currency": "INR"
-}
-```
-
-**API Response:**
-```json
-{
-  "status": "success",
-  "transactionId": "TXN-20251015121134-0571",
-  "paymentGatewayUrl": "https://payment.abfrl.com/checkout/TXN-20251015121134-0571",
-  "checkoutStatus": "initiated",
-  "amount": 4999,
-  "currency": "INR",
-  "message": "Payment session created. Please proceed to complete the payment of INR 4999."
-}
-```
-
-**Payment Methods Supported:**
-- Credit Card (mock: 4242 = success, 1111 = failure)
-- UPI (validates UPI ID format)
-
----
-
-### 6. Post-Purchase Support Agent
-
-**Technology:** Flask REST API
-**Port:** 5004
-**Endpoints:** `/get-order-status`, `/initiate-return`
-
-**Core Functionality:**
-
-#### Order Status Tracking
 ```python
-Features:
-- Real-time order status updates
-- Estimated delivery dates
-- Tracking link generation
-- Order item details
-```
+# monitoring/metrics.py
 
-**Order Database:**
-```python
-Orders:
-- ORD-12345 (out_for_delivery) - Denim Trucker Jacket, Cotton T-Shirt
-- ORD-67890 (in_transit) - Classic Biker Jacket
-- ORD-A1465 (dispatched) - Lightweight Puffer Jacket
-```
+class MetricsManager:
+    """Prometheus metrics for agent mesh observability"""
 
-**API Request:**
-```json
-POST http://127.0.0.1:5004/get-order-status
-{
-  "orderId": "ORD-12345",
-  "userId": "user_12345"
-}
+    def _setup_metrics(self):
+        self.request_count = Counter(
+            'http_requests_total', 'Total HTTP requests',
+            ['method', 'endpoint', 'status'], registry=self.registry
+        )
+        self.request_duration = Histogram(
+            'http_request_duration_seconds', 'Request duration',
+            ['method', 'endpoint'], registry=self.registry
+        )
+        self.agent_calls = Counter(
+            'agent_calls_total', 'Inter-agent calls',
+            ['source_agent', 'target_agent', 'status'], registry=self.registry
+        )
+        self.agent_call_duration = Histogram(
+            'agent_call_duration_seconds', 'Agent-to-agent latency',
+            ['source_agent', 'target_agent'], registry=self.registry
+        )
+        self.recommendations_generated = Counter(
+            'recommendations_generated_total', 'Recommendations served',
+            ['user_tier'], registry=self.registry
+        )
 ```
-
-**API Response:**
-```json
-{
-  "status": "success",
-  "orderId": "ORD-12345",
-  "orderStatus": "out_for_delivery",
-  "statusDescription": "Your order is out for delivery and should arrive today.",
-  "estimatedDelivery": "2025-10-15",
-  "trackingLink": "https://track.abfrl.com/ORD-12345",
-  "items": ["Denim Trucker Jacket", "Cotton T-Shirt"]
-}
-```
-
-**Return/Exchange System:**
-- Generates unique return IDs (RET-{orderID_suffix}-{timestamp})
-- Schedules pickup within 2-3 business days
-- Validates order existence before processing
 
 ---
 
-## 💻 Technology Stack
+### 5. Kubernetes with Horizontal Pod Autoscaling for LLM Traffic
 
-### Core Technologies
+Deployed multi-agent mesh on Kubernetes with per-agent HPA scaling on CPU, memory, and custom metrics (inference queue depth), with stabilization windows tuned for LLM cold-start latency.
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **LLM** | Google Gemini Pro | Natural language understanding & generation |
-| **Agent Framework** | LangChain | Tool orchestration, memory, conversation |
-| **Backend APIs** | Flask | Microservices for specialized agents |
-| **HTTP Client** | Requests | Inter-agent communication |
-| **Memory** | ConversationBufferMemory | Session state management |
-| **Database** | MongoDB | Persistent storage (Enhanced version) |
-| **Tracing** | OpenTelemetry + Jaeger | Distributed tracing (Enhanced version) |
-| **Metrics** | Prometheus + Grafana | Monitoring & visualization (Enhanced version) |
-| **Logging** | python-json-logger | Structured JSON logs (Enhanced version) |
-| **Language** | Python 3.13 | Primary programming language |
-
-### Dependencies
-
-#### Standard Version (Minimal)
 ```
-langchain              # Agent framework
-langchain-google-genai # Google Gemini integration
-python-dotenv          # Environment variable management
-requests               # HTTP client for API calls
-flask                  # Web framework for agent APIs
+┌─────────────────── EKS Cluster ───────────────────────┐
+│                                                        │
+│  ┌─── Namespace: multi-agent-sales ────────────────┐  │
+│  │                                                  │  │
+│  │  Sales Agent (2-10 pods)        HPA: CPU 70%    │  │
+│  │  Recommendation Agent (2-8)     HPA: queue < 5  │  │
+│  │  Inventory Agent (2-6)          HPA: CPU 70%    │  │
+│  │  Fulfillment Agent (2-4)        HPA: CPU 70%    │  │
+│  │  Payment Agent (2-4)            HPA: CPU 70%    │  │
+│  │                                                  │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                        │
+│  Ingress (nginx) ──► Service Mesh ──► Pod Routing      │
+│  Prometheus ──► Custom Metrics API ──► HPA Decisions   │
+└────────────────────────────────────────────────────────┘
 ```
 
-#### Enhanced Version (Production-Ready)
+```yaml
+# k8s/hpa.yaml
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: recommendation-agent-hpa
+  namespace: multi-agent-sales
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: recommendation-agent
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+    - type: Pods
+      pods:
+        metric:
+          name: llm_inference_queue_depth
+        target:
+          type: AverageValue
+          averageValue: "5"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 90
+    scaleDown:
+      stabilizationWindowSeconds: 600   # Slow scale-down (LLM model loading is expensive)
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 180
 ```
-# Core (Standard)
-langchain, langchain-google-genai, python-dotenv, requests, flask
 
-# MongoDB Integration
-pymongo>=4.6.0
+```yaml
+# k8s/agent-deployment.yaml (excerpt)
 
-# Distributed Tracing (OpenTelemetry)
-opentelemetry-api>=1.21.0
-opentelemetry-sdk>=1.21.0
-opentelemetry-instrumentation-flask>=0.42b0
-opentelemetry-instrumentation-requests>=0.42b0
-opentelemetry-instrumentation-pymongo>=0.42b0
-opentelemetry-exporter-otlp>=1.21.0
-opentelemetry-exporter-jaeger>=1.21.0
-
-# Metrics & Logging
-prometheus-client>=0.19.0
-python-json-logger>=2.0.7
+spec:
+  containers:
+    - name: recommendation-agent
+      image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/recommendation-agent:latest
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "2Gi"
+          nvidia.com/gpu: "0"
+        limits:
+          cpu: "1000m"
+          memory: "6Gi"
+          nvidia.com/gpu: "1"
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 5002
+        initialDelaySeconds: 60    # Allow model loading time
+      readinessProbe:
+        httpGet:
+          path: /health
+          port: 5002
+        initialDelaySeconds: 30
 ```
-
-### Why These Technologies?
-
-**LangChain:**
-- Industry-standard framework for building LLM applications
-- Built-in support for tool calling and memory
-- Easy integration with various LLMs
-- Production-ready agent executors
-
-**Google Gemini Pro:**
-- Advanced reasoning capabilities
-- Function calling support
-- Cost-effective compared to GPT-4
-- Fast response times
-
-**Flask:**
-- Lightweight and perfect for microservices
-- Easy to deploy and scale
-- RESTful API development
-- Python ecosystem compatibility
 
 ---
 
-##  Features
+### 6. AWS CI/CD Pipeline (GitHub Actions + ECR)
 
-### Conversational AI Features
--  Multi-turn conversations with context retention
--  Natural language understanding
--  Intent recognition and slot filling
--  Proactive recommendations
--  Error handling and graceful degradation
+Engineered automated CI/CD with matrix builds for all agent containers, pushed to ECR, and deployed to EKS with rolling updates and health verification.
 
-### Business Features
--  Personalized product recommendations
--  Real-time inventory checking
--  Multi-channel fulfillment options
--  Bundle deals and promotions
--  Store reservation system
--  Seasonal trend analysis
--  Secure payment processing
--  Order status tracking
--  Return and exchange management
+```
+  git push main
+       │
+       ▼
+  ┌─────────────────────────────────────────────┐
+  │  GitHub Actions Pipeline                     │
+  │                                              │
+  │  1. Test ���─► Lint + Unit Tests               │
+  │       │                                      │
+  │       ▼                                      │
+  │  2. Build (Matrix: 5 agents in parallel)     │
+  │       │                                      │
+  │       ▼                                      │
+  │  3. Push to ECR ──► tag: sha + latest        │
+  │       │                                      │
+  │       ▼                                      │
+  │  4. Deploy to EKS                            │
+  │       ├── kubectl apply (deployments)        │
+  │       ├── kubectl apply (HPA)                │
+  │       └── rollout status (health check)      │
+  └─────────────────────────────────────────────┘
+```
 
-### Technical Features
--  Microservices architecture
--  REST API communication
--  Agent-to-agent orchestration
--  Session management
--  Error handling and retry logic
--  Modular and extensible design
+```yaml
+# .github/workflows/deploy.yml
 
-### Enhanced Version Features (Production)
--  📊 **MongoDB Database Integration**
-   - Persistent conversation history
-   - User profile storage with preferences and purchase history
-   - Product inventory management
-   - Order and transaction tracking
-   - Reservation management
-   - Automatic indexing and TTL caching
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        agent:
+          - name: sales-agent
+          - name: recommendation-agent
+          - name: inventory-agent
+          - name: fulfillment-agent
+          - name: payment-agent
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
--  🔍 **Distributed Tracing (OpenTelemetry)**
-   - End-to-end request tracing across all services
-   - Service dependency mapping
-   - Performance bottleneck identification
-   - Support for Jaeger, OTLP, and Console exporters
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
--  📈 **Prometheus Metrics**
-   - HTTP request metrics (count, duration, size)
-   - Inter-agent call tracking
-   - Business metrics (recommendations, transactions, reservations)
-   - Database operation metrics
-   - System metrics (active sessions, cache hit rate)
+      - name: Build, tag, and push to ECR
+        run: |
+          docker build -t $ECR_REGISTRY/${{ matrix.agent.name }}:${{ github.sha }} .
+          docker push $ECR_REGISTRY/${{ matrix.agent.name }}:${{ github.sha }}
+          docker push $ECR_REGISTRY/${{ matrix.agent.name }}:latest
 
--  📝 **Structured Logging**
-   - JSON formatted logs with trace context
-   - Automatic trace ID/span ID propagation
-   - Sensitive data filtering
-   - Business event logging
+  deploy:
+    needs: build-and-push
+    steps:
+      - name: Deploy to EKS
+        run: |
+          aws eks update-kubeconfig --name multi-agent-sales-cluster
+          kubectl apply -f k8s/services.yaml
+          envsubst < k8s/agent-deployment.yaml | kubectl apply -f -
+          kubectl apply -f k8s/hpa.yaml
 
--  🐳 **Docker Monitoring Stack**
-   - MongoDB (database)
-   - Prometheus (metrics collection)
-   - Grafana (visualization dashboards)
-   - Jaeger (distributed tracing UI)
-   - Loki + Promtail (log aggregation)
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/sales-agent -n multi-agent-sales
+          kubectl rollout status deployment/recommendation-agent -n multi-agent-sales
+```
 
 ---
 
-## 🗄️ MongoDB & Monitoring
+## Quick Start
 
-### Database Collections
-
-The enhanced version uses MongoDB with the following schema:
-
-1. **user_profiles** - Customer data, preferences, loyalty tier
-2. **conversations** - Chat history with session management
-3. **inventory** - Products, stock levels, warehouses, stores
-4. **orders** - Order tracking and status
-5. **transactions** - Payment transaction records
-6. **reservations** - Store reservation tracking
-7. **recommendations_cache** - Cached recommendations (1hr TTL)
-
-### Monitoring Capabilities
-
-**Distributed Tracing (Jaeger)**
-- View complete request flow across all microservices
-- Identify performance bottlenecks
-- Debug errors with full context
-- Access at: http://localhost:16686
-
-**Metrics Dashboard (Grafana)**
-- Real-time performance monitoring
-- Business analytics (sales, recommendations)
-- Database operation metrics
-- Error tracking and alerting
-- Access at: http://localhost:3000
-
-**Metrics Endpoints**
-All enhanced agents expose Prometheus metrics at `/metrics`:
-- Sales Agent: http://localhost:8000/metrics
-- Recommendation: http://localhost:5002/metrics
-- Inventory: http://localhost:5003/metrics
-
-### Quick Start Options
-
-**Option 1: Standard Version (Simple)**
 ```bash
-pip install langchain langchain-google-genai python-dotenv requests flask
-echo "GOOGLE_API_KEY=your_key" > .env
-python recommendation-agent/agent.py &
-python inventory-agent/agent.py &
-python main.py
-```
-
-**Option 2: Enhanced Version (Production)**
-```bash
+# Local development
 pip install -r requirements.txt
+echo "GOOGLE_API_KEY=your_key" > .env
+
+# Start agents
+python recommendation-agent/agent.py &    # :5002
+python inventory-agent/agent.py &          # :5003
+python fulfillment-agent/agent.py &        # :5001
+python payment-agent/agent.py &            # :5005
+python post_purchase_agent/agent.py &      # :5004
+python main.py                             # Sales orchestrator
+
+# With monitoring stack
 docker-compose -f docker-compose.monitoring.yml up -d
-cp .env.example .env  # Edit with your settings
-python recommendation-agent/agent_enhanced.py &
-python inventory-agent/agent_enhanced.py &
 python main_enhanced.py
 ```
 
-See [QUICK_START.md](QUICK_START.md) for detailed instructions.
-
 ---
 
-## 🚀 Setup Instructions
-
-### Prerequisites
-
-- Python 3.13 or higher
-- Google Gemini API Key ([Get it here](https://makersuite.google.com/app/apikey))
-- Terminal/Command Prompt
-
-### Step 1: Clone/Download the Project
-
-```bash
-cd Sales-Agent
-```
-
-### Step 2: Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Step 3: Configure Environment Variables
-
-Create a `.env` file in the project root:
-
-```bash
-GOOGLE_API_KEY=your_actual_api_key_here
-```
-
-**How to get API key:**
-1. Visit https://makersuite.google.com/app/apikey
-2. Sign in with Google account
-3. Click "Create API Key"
-4. Copy and paste into `.env` file
-
-### Step 4: Verify Setup
-
-```bash
-python check_models.py
-```
-
-Expected output:
-```
-Successfully configured API key. Fetching available models...
---------------------
-Model found: models/gemini-pro-latest
-Model found: models/gemini-1.5-flash
-...
-```
-
-### Step 5: Start All Agents
-
-**Terminal 1 - Fulfillment Agent:**
-```bash
-cd fulfillment-agent
-python agent.py
-```
-Output: `Running on http://127.0.0.1:5001`
-
-**Terminal 2 - Recommendation Agent:**
-```bash
-cd recommendation-agent
-python agent.py
-```
-Output: `Running on http://127.0.0.1:5002`
-
-**Terminal 3 - Inventory Agent:**
-```bash
-cd inventory-agent
-python agent.py
-```
-Output: `Running on http://127.0.0.1:5003`
-
-**Terminal 4 - Post-Purchase Agent:**
-```bash
-cd post_purchase_agent
-python agent.py
-```
-Output: `Running on http://127.0.0.1:5004`
-
-**Terminal 5 - Payment Agent:**
-```bash
-cd payment-agent
-python agent.py
-```
-Output: `Running on http://127.0.0.1:5005`
-
-**Terminal 6 - Sales Agent:**
-```bash
-python main.py
-```
-Output: `Hello! I'm Ria. How can I help you today?`
-
----
-
-## 📱 Usage
-
-### Example Conversation
+## Project Structure
 
 ```
-You: Hi! I'm looking for a casual jacket for women.
-
-Ria: I'd love to help! I've found some great options:
-     - Denim Trucker Jacket (₹4,999)
-     - Classic Biker Jacket (₹8,999)
-     - Lightweight Puffer Jacket (₹5,499)
-
-     Plus, we have a "Complete Casual Look" bundle with 15% OFF!
-
-You: Can you check if the Denim Trucker Jacket is available in Delhi, size M?
-
-Ria: Great news! The Denim Trucker Jacket is in stock:
-
-     Online: 410 units available, ships in 2-3 days
-
-     Stores in Delhi:
-     - Select Citywalk: 5 left (LOW STOCK!)
-     - DLF Promenade: 2 left (LOW STOCK!)
-
-     You can ship to home, reserve for pickup, or buy in-store!
-
-You: Reserve it at Select Citywalk for me.
-
-Ria: Perfect! I've reserved it for you.
-     Reservation ID: RES-SKU_-STO-2345
-     Valid for: 24 hours
-     Store: Select Citywalk, Saket
-```
-
-### What Happened Behind the Scenes?
-
-```
-1. User Query → Sales Agent (Ria)
-2. Ria calls Recommendation Agent API
-   ↳ Analyzes user profile + seasonal trends
-   ↳ Returns personalized products
-3. Ria calls Inventory Agent API
-   ↳ Checks 4 warehouses
-   ↳ Checks 5 stores
-   ↳ Calculates fulfillment options
-4. Ria calls Fulfillment Agent API
-   ↳ Creates reservation
-   ↳ Generates reservation ID
-5. Ria responds to user with all information
-```
-
----
-
-## 📡 API Documentation
-
-### Recommendation Agent API
-
-**Endpoint:** `POST http://127.0.0.1:5002/get-recommendations`
-
-**Request Body:**
-```json
-{
-  "user_id": "string (required)",
-  "context": "string (required) - e.g., 'casual jacket'",
-  "count": "integer (optional, default: 3)"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "recommendations": [
-    {
-      "productId": "string",
-      "name": "string",
-      "price": {
-        "amount": "number",
-        "currency": "string"
-      },
-      "imageUrl": "string",
-      "tags": ["string"]
-    }
-  ],
-  "bundles": [
-    {
-      "bundleName": "string",
-      "products": ["string"],
-      "discount": "string",
-      "totalPrice": "number"
-    }
-  ],
-  "promotions": ["string"]
-}
-```
-
----
-
-### Inventory Agent API
-
-**Endpoint:** `POST http://127.0.0.1:5003/check-inventory`
-
-**Request Body:**
-```json
-{
-  "product_id": "string (required)",
-  "attributes": {
-    "size": "string (optional)",
-    "color": "string (optional)"
-  },
-  "location_context": {
-    "city": "string (optional)"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "productId": "string",
-  "onlineStatus": "in_stock|low_stock|out_of_stock",
-  "onlineStockLevel": "number",
-  "warehouses": [
-    {
-      "warehouseId": "string",
-      "warehouseName": "string",
-      "location": "string",
-      "stockLevel": "number",
-      "estimatedShippingTime": "string"
-    }
-  ],
-  "availableStores": [
-    {
-      "storeId": "string",
-      "storeName": "string",
-      "address": "string",
-      "city": "string",
-      "region": "string",
-      "stockLevel": "number",
-      "stockDescriptor": "high|medium|low"
-    }
-  ],
-  "fulfillmentOptions": [
-    {
-      "type": "ship_to_home|click_and_collect|in_store_purchase",
-      "available": "boolean",
-      "estimatedDelivery": "date (optional)",
-      "shippingCost": "number (optional)",
-      "availableStores": "number (optional)",
-      "message": "string (optional)"
-    }
-  ],
-  "lastUpdated": "ISO 8601 timestamp"
-}
-```
-
----
-
-### Fulfillment Agent API
-
-**Endpoint:** `POST http://127.0.0.1:5001/reserve-in-store`
-
-**Request Body:**
-```json
-{
-  "user_id": "string (required)",
-  "product_id": "string (required)",
-  "store_id": "string (required)"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success|error",
-  "reservationId": "string",
-  "confirmationMessage": "string"
-}
-```
-
----
-
-### Payment Agent API
-
-**Endpoint:** `POST http://127.0.0.1:5005/initiate-checkout`
-
-**Request Body:**
-```json
-{
-  "userId": "string (required)",
-  "cartId": "string (required)",
-  "totalAmount": "number (required)",
-  "currency": "string (optional, default: INR)"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "transactionId": "string",
-  "paymentGatewayUrl": "string",
-  "checkoutStatus": "initiated",
-  "amount": "number",
-  "currency": "string",
-  "message": "string"
-}
-```
-
----
-
-### Post-Purchase Agent API
-
-**Endpoint:** `POST http://127.0.0.1:5004/get-order-status`
-
-**Request Body:**
-```json
-{
-  "orderId": "string (required)",
-  "userId": "string (required)"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "orderId": "string",
-  "orderStatus": "string",
-  "statusDescription": "string",
-  "estimatedDelivery": "date",
-  "trackingLink": "string",
-  "items": ["string"]
-}
-```
-
-**Endpoint:** `POST http://127.0.0.1:5004/initiate-return`
-
-**Request Body:**
-```json
-{
-  "orderId": "string (required)",
-  "userId": "string (required)",
-  "itemDescription": "string (optional)",
-  "reason": "string (optional)"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "returnId": "string",
-  "orderId": "string",
-  "message": "string",
-  "pickupEstimate": "date"
-}
-```
-
----
-
-## 🔄 System Flow
-
-### Complete User Journey Flow
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ 1. USER: "I need a jacket"                             │
-└────────────────┬────────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────┐
-│ 2. SALES AGENT: Receives & understands intent          │
-│    - LangChain processes input                         │
-│    - Identifies need for recommendations               │
-│    - Prepares tool call                                │
-└────────────────┬────────────────────────────────────────┘
-                 │
-                 ▼ POST /get-recommendations
-┌─────────────────────────────────────────────────────────┐
-│ 3. RECOMMENDATION AGENT:                               │
-│     Loads user profile (preferences, history)         │
-│     Checks current season (Oct = Fall)                │
-│     Scores products by relevance                      │
-│     Generates bundle offers                           │
-│     Returns top 3 products + promotions               │
-└────────────────┬────────────────────────────────────────┘
-                 │ Returns JSON
-                 ▼
-┌─────────────────────────────────────────────────────────┐
-│ 4. SALES AGENT: Formats response                       │
-│    "I found 3 jackets for you: ..."                    │
-└────────────────┬────────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────┐
-│ 5. USER: "Check stock for SKU_JCK_01 in Delhi, M"     │
-└────────────────┬────────────────────────────────────────┘
-                 │
-                 ▼ POST /check-inventory
-┌─────────────────────────────────────────────────────────┐
-│ 6. INVENTORY AGENT:                                    │
-│     Queries 4 warehouses → 410 total units           │
-│     Filters stores by Delhi → 2 stores found         │
-│     Calculates online status → "in_stock"            │
-│     Determines fulfillment options → 3 options        │
-│     Adds last updated timestamp                       │
-└────────────────┬────────────────────────────────────────┘
-                 │ Returns JSON
-                 ▼
-┌─────────────────────────────────────────────────────────┐
-│ 7. SALES AGENT: Formats response                       │
-│    "In stock! 5 at Citywalk, 2 at DLF..."             │
-└────────────────┬────────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────┐
-│ 8. USER: "Reserve at Citywalk"                        │
-└────────────────┬────────────────────────────────────────┘
-                 │
-                 ▼ POST /reserve-in-store
-┌─────────────────────────────────────────────────────────┐
-│ 9. FULFILLMENT AGENT:                                  │
-│     Validates product/store/user                      │
-│     Generates reservation ID                          │
-│     Creates 24-hour hold                              │
-│     (Would) Notify store staff                        │
-└────────────────┬────────────────────────────────────────┘
-                 │ Returns JSON
-                 ▼
-┌─────────────────────────────────────────────────────────┐
-│ 10. SALES AGENT: Confirms reservation                  │
-│     "Reserved! ID: RES-SKU_-STO-2345"                  │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🎓 Key Technical Concepts for Presentation
-
-### 1. Agent-Based Architecture
-
-**What is it?**
-- System decomposed into autonomous agents
-- Each agent has a specific responsibility
-- Agents communicate via well-defined interfaces (APIs)
-
-**Benefits:**
-- **Scalability**: Scale individual agents independently
-- **Maintainability**: Changes to one agent don't affect others
-- **Testability**: Each agent can be tested in isolation
-- **Resilience**: If one agent fails, others continue working
-
-### 2. LangChain Tool Calling
-
-**What is it?**
-LangChain allows LLMs to use "tools" - external functions the AI can invoke.
-
-**How it works:**
-```python
-1. LLM receives user input
-2. LLM decides which tool(s) to use
-3. LLM generates function call with parameters
-4. Tool executes and returns result
-5. LLM uses result to generate response
-```
-
-**Example:**
-```
-User: "Check stock for SKU_JCK_01"
-LLM thinks: "I need to use check_inventory tool"
-LLM calls: check_inventory(product_id="SKU_JCK_01", location="Delhi")
-Tool returns: {stock: 410, stores: [...]}
-LLM responds: "Great news! We have 410 units..."
-```
-
-### 3. Conversation Memory
-
-**What is it?**
-System that maintains context across multiple conversation turns.
-
-**Implementation:**
-```python
-ConversationBufferMemory stores:
-- Previous user messages
-- Previous AI responses
-- Conversation metadata
-```
-
-**Why it matters:**
-```
-Without memory:
-User: "Show me jackets"
-AI: [shows jackets]
-User: "What colors?"
-AI: "What colors for what?" ❌
-
-With memory:
-User: "Show me jackets"
-AI: [shows jackets]
-User: "What colors?"
-AI: "The Denim Trucker comes in blue and black" 
-```
-
-### 4. Microservices Communication
-
-**REST API Pattern:**
-- Each agent exposes HTTP endpoints
-- Agents communicate using JSON
-- Stateless request/response model
-- Standard HTTP methods (POST)
-
-**Benefits:**
-- Language agnostic (can use Python, Node.js, Java, etc.)
-- Easy to debug (can test with curl/Postman)
-- Industry standard
-- Cloud-ready
-
----
-
----
-
-## 📊 Monitoring & Observability
-
-### Available Monitoring (Enhanced Version)
-
-The enhanced version includes a complete observability stack:
-
-#### 1. Distributed Tracing (Jaeger)
-```bash
-# Access Jaeger UI
-http://localhost:16686
-
-# Features:
-- End-to-end request tracing
-- Service dependency graphs
-- Performance analysis
-- Error tracking with full context
-```
-
-#### 2. Metrics Dashboard (Grafana)
-```bash
-# Access Grafana
-http://localhost:3000
-Username: admin
-Password: admin123
-
-# Pre-built Dashboard Includes:
-- Total Requests per Service
-- Request Duration (P95 latency)
-- Error Rate by Service
-- Active User Sessions
-- Agent-to-Agent Call Flow
-- Database Operations
-- Business Metrics (Recommendations, Transactions, Reservations)
-- Cache Hit Rate
-```
-
-#### 3. Metrics Collection (Prometheus)
-```bash
-# Access Prometheus
-http://localhost:9090
-
-# Metrics Endpoints:
-- http://localhost:5002/metrics (Recommendation Agent)
-- http://localhost:5003/metrics (Inventory Agent)
-```
-
-#### 4. Database (MongoDB)
-```bash
-# Connection
-mongodb://localhost:27017
-
-# Collections:
-- user_profiles
-- conversations
-- inventory
-- orders
-- transactions
-- reservations
-- recommendations_cache
-```
-
-### Setting Up Monitoring
-
-```bash
-# 1. Start monitoring stack
-docker-compose -f docker-compose.monitoring.yml up -d
-
-# 2. Verify services
-docker ps
-
-# 3. Access dashboards
-# Grafana: http://localhost:3000
-# Jaeger: http://localhost:16686
-# Prometheus: http://localhost:9090
-
-# 4. Import Grafana dashboard
-# Upload monitoring/grafana_dashboard.json
-```
-
-See [MONITORING_SETUP.md](MONITORING_SETUP.md) for complete guide.
-
----
-
-## 🔮 Future Enhancements
-
-### Phase 1: Data Persistence ✅ COMPLETED
-- [x] MongoDB for user profiles
-- [x] MongoDB for conversation history
-- [x] Persistent reservation storage
-- [x] Order history database
-- [x] Transaction tracking
-
-### Phase 2: Observability ✅ COMPLETED
-- [x] Distributed tracing (OpenTelemetry + Jaeger)
-- [x] Metrics collection (Prometheus)
-- [x] Visualization dashboards (Grafana)
-- [x] Structured logging with trace context
-- [x] Docker monitoring stack
-
-### Phase 3: Advanced AI Features
-- [ ] Vector database for semantic search
-- [ ] RAG (Retrieval Augmented Generation) for product knowledge
-- [ ] Sentiment analysis for customer satisfaction
-- [ ] Multi-language support
-- [ ] Voice interface integration
-
-### Phase 4: Enterprise Features
-- [ ] Authentication & authorization (JWT)
-- [ ] Rate limiting and API quotas
-- [ ] Real payment gateway integration
-- [ ] Email/SMS notifications
-- [ ] CRM system integration
-
-### Phase 5: Scalability
-- [x] Containerization (Docker) - Partially done
-- [ ] Kubernetes orchestration
-- [ ] Load balancing
-- [ ] Horizontal scaling
-- [ ] CDN for static assets
-
-### Phase 6: User Experience
-- [ ] Web UI (React/Vue)
-- [ ] Mobile app (React Native)
-- [ ] Voice interface (Alexa/Google Assistant)
-- [ ] WhatsApp/Telegram bot
-- [ ] AR try-on features
-
----
-
-## 🎯 Business Value
-
-### For Customers
-- **Personalized Experience**: AI understands preferences and history
-- **Multi-Channel Options**: Buy online, pick up in-store, or shop in-person
-- **Real-Time Information**: Live inventory updates
-- **24/7 Availability**: AI assistant always available
-- **Seamless Journey**: From discovery to purchase
-
-### For Business
-- **Increased Conversion**: Personalized recommendations boost sales
-- **Reduced Support Cost**: AI handles common queries
-- **Better Inventory Management**: Real-time visibility
-- **Customer Insights**: Analytics on preferences and behavior
-- **Competitive Advantage**: Modern, tech-forward brand image
-
-### Metrics to Track
-- Conversion rate improvement
-- Average order value increase
-- Customer satisfaction score
-- Response time reduction
-- Support ticket reduction
-
----
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-**Issue: "Could not connect to recommendation service"**
-```
-Solution: Ensure Recommendation Agent is running on port 5002
-Check: Run 'curl http://127.0.0.1:5002/get-recommendations'
-```
-
-**Issue: "API key not found"**
-```
-Solution: Create .env file with GOOGLE_API_KEY=your_key
-Verify: Run 'python check_models.py'
-```
-
-**Issue: "Port already in use"**
-```
-Solution: Kill the process using the port
-Windows: netstat -ano | findstr :5002
-Linux/Mac: lsof -ti:5002 | xargs kill
-```
-
-**Issue: "Dependency conflicts"**
-```
-Solution: Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
----
-# Local LLM Agents - Complete Integration Summary
-
-## 🎯 Overview
-
-All **6 worker agents** now have local LLM variants optimized for MacBook M1 8GB and RTX 3060. Each agent uses a specialized lightweight model selected for its specific task domain.
-
----
-
-## 🧠 Agent-LLM Mapping
-
-| Agent | LLM Model | Size | Memory | Specialization | Port |
-|-------|-----------|------|--------|----------------|------|
-| **Recommendation** | TinyLlama 1.1B | 637MB | 600MB | Creative product suggestions | 5002 |
-| **Inventory** | StableLM 2 1.6B | 1.1GB | 800MB | Factual stock analysis | 5003 |
-| **Fulfillment** | Qwen 1.8B | 1.1GB | 900MB | Structured task execution | 5001 |
-| **Loyalty** | Phi-2 2.7B | 1.7GB | 1.5GB | Mathematical reasoning & logic | 5006 |
-| **Payment** | StableLM 2 1.6B | 1.1GB | 1GB | Transaction processing | 5005 |
-| **Post-Purchase** | TinyLlama 1.1B | 637MB | 800MB | Customer support & empathy | 5004 |
-
-**Total Memory Usage: ~5.6GB** (M1 8GB has 2.4GB free)
-
----
-
-## 🚀 Quick Start
-
-### Option 1: Run Individual Agents
-
-```bash
-# Start specific agents with local LLMs
-python recommendation-agent/agent_local_llm.py  # Port 5002
-python inventory-agent/agent_local_llm.py       # Port 5003
-python fulfillment-agent/agent_local_llm.py     # Port 5001
-python loyalty-agent/agent_local_llm.py         # Port 5006
-python payment-agent/agent_local_llm.py         # Port 5005
-python post_purchase_agent/agent_local_llm.py   # Port 5004
-```
-
-### Option 2: Run Multiple Agents (M1 8GB Optimized)
-
-**Scenario 1: Customer-Facing Pair (2.3GB)**
-```bash
-# Best for customer interactions
-python recommendation-agent/agent_local_llm.py &   # TinyLlama 600MB
-python loyalty-agent/agent_local_llm.py &          # Phi-2 1.5GB
-```
-
-**Scenario 2: Operations Pair (1.8GB)**
-```bash
-# Best for backend operations
-python inventory-agent/agent_local_llm.py &        # StableLM 800MB
-python payment-agent/agent_local_llm.py &          # StableLM 1GB
-```
-
-**Scenario 3: Full Service Trio (2.3GB)**
-```bash
-# Covers most use cases
-python recommendation-agent/agent_local_llm.py &   # TinyLlama 600MB
-python inventory-agent/agent_local_llm.py &        # StableLM 800MB
-python fulfillment-agent/agent_local_llm.py &      # Qwen 900MB
-```
-
----
-
-## 📊 Model Selection Rationale
-
-### 1. Recommendation Agent - TinyLlama 1.1B
-**Why?**
-- Creative text generation for product descriptions
-- Low memory footprint (600MB)
-- Fast inference for real-time recommendations
-- Good at conversational, engaging responses
-
-**Capabilities:**
-- Personalized product matching
-- Style-aware suggestions
-- Context-aware recommendations
-
----
-
-### 2. Inventory Agent - StableLM 2 1.6B
-**Why?**
-- Excellent at factual, structured outputs
-- Reliable for stock calculations
-- Strong reasoning for supply chain logic
-- Good JSON formatting
-
-**Capabilities:**
-- Stock level analysis
-- Warehouse/store availability checks
-- Urgency assessment
-- Restocking recommendations
-
----
-
-### 3. Fulfillment Agent - Qwen 1.8B
-**Why?**
-- Strong at structured task execution
-- Excellent Chinese-English bilingual (useful for global retail)
-- Good at following specific formats
-- Efficient at validation logic
-
-**Capabilities:**
-- Reservation validation
-- Store coordination logic
-- Conflict resolution
-- Multi-location handling
-
----
-
-### 4. Loyalty Agent - Phi-2 2.7B
-**Why?**
-- **Best-in-class mathematical reasoning**
-- Excellent at calculating discounts/savings
-- Strong logic for offer optimization
-- Can compare multiple scenarios
-
-**Capabilities:**
-- Points-to-value calculations
-- Multi-offer optimization (coupons + points + discounts)
-- Tier-based recommendations
-- ROI analysis for customers
-
----
-
-### 5. Payment Agent - StableLM 2 1.6B
-**Why?**
-- Reliable and deterministic (critical for payments)
-- Good at error handling
-- Clear, factual failure messages
-- Consistent output format
-
-**Capabilities:**
-- Transaction validation
-- Intelligent failure analysis
-- Alternative payment suggestions
-- Risk assessment
-
----
-
-### 6. Post-Purchase Agent - TinyLlama 1.1B
-**Why?**
-- Empathetic, conversational tone
-- Good at customer support language
-- Fast responses for time-sensitive queries
-- Lightweight for high-volume support
-
-**Capabilities:**
-- Order status explanations
-- Return/exchange handling
-- Tracking updates with context
-- Empathetic problem resolution
-
----
-
-## 🔄 Continuous Improvement
-
-All agents include **automatic fine-tuning**:
-
-```python
-# Automatic feedback collection
-llm_manager.collect_feedback(
-    prompt="customer_query",
-    response="agent_output",
-    rating=1-5,  # User satisfaction
-    metadata={"context": "..."}
-)
-
-# Auto-triggers retraining after N samples
-# Default: 50 samples (configurable)
-# Uses QLoRA (4-bit quantization + LoRA adapters)
-# Training time: ~10-15 min on M1
-```
-
-### Feedback Flow
-1. **User Interaction** → Agent generates response
-2. **Implicit Feedback** → Success/failure metrics collected
-3. **Explicit Feedback** → Optional user ratings (1-5 stars)
-4. **Storage** → JSON files in `feedback_data/`
-5. **Auto-Training** → Triggered at threshold (default: 50 samples)
-6. **Hot Reload** → New LoRA adapters loaded without restart
-
----
-
-## 💾 Memory Management
-
-### M1 8GB Unified Memory Strategy
-
-| Scenario | Agents Running | Memory Used | Free Memory |
-|----------|----------------|-------------|-------------|
-| **All 6 Sequential** | 1 at a time | ~1.5GB peak | 6.5GB |
-| **Dual Customer** | Recommendation + Loyalty | 2.3GB | 5.7GB |
-| **Dual Operations** | Inventory + Payment | 1.8GB | 6.2GB |
-| **Triple Service** | Rec + Inv + Fulfillment | 2.3GB | 5.7GB |
-| **Full Deployment** | All 6 (not recommended) | 5.6GB | 2.4GB |
-
-**Recommended:** Run 2-3 agents simultaneously for optimal performance.
-
----
-
-## 🔧 Configuration
-
-All models configured in [local_llm/m1_optimized_config.py](local_llm/m1_optimized_config.py):
-
-```python
-M1_8GB_CONFIGS = {
-    "recommendation": M1LLMConfig(
-        model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        quantization="4bit",
-        max_tokens=256,
-        temperature=0.7,
-        max_memory_mb=1500,
-    ),
-    # ... 5 more configs
-}
-```
-
-### Key Parameters:
-- **quantization**: "4bit" (75% memory reduction)
-- **max_tokens**: 128-256 (keeps responses concise)
-- **temperature**: 0.2-0.7 (lower = more deterministic)
-- **max_memory_mb**: Per-agent memory limit
-- **lora_rank**: 4 (ultra-lightweight fine-tuning)
-
----
-
-## 📈 Performance Benchmarks
-
-### Inference Speed (M1 8GB)
-
-| Agent | Model | Tokens/sec | Latency (avg) |
-|-------|-------|------------|---------------|
-| Recommendation | TinyLlama | ~45 | 150ms |
-| Inventory | StableLM | ~35 | 200ms |
-| Fulfillment | Qwen | ~38 | 180ms |
-| Loyalty | Phi-2 | ~28 | 250ms |
-| Payment | StableLM | ~35 | 200ms |
-| Post-Purchase | TinyLlama | ~45 | 150ms |
-
-### Training Speed (QLoRA Fine-tuning)
-
-| Model | Samples/batch | Time/epoch | Total (100 samples) |
-|-------|---------------|------------|---------------------|
-| TinyLlama 1.1B | 1 | ~2 min | ~10 min |
-| StableLM 1.6B | 1 | ~3 min | ~15 min |
-| Qwen 1.8B | 1 | ~3 min | ~15 min |
-| Phi-2 2.7B | 1 | ~5 min | ~25 min |
-
-*Batch size = 1, Gradient accumulation = 8*
-
----
-
-## 🎛️ API Endpoints
-
-All local LLM agents expose these additional endpoints:
-
-### Health Check
-```bash
-GET http://localhost:500X/health
-
-Response:
-{
-    "status": "healthy",
-    "agent": "recommendation",
-    "llm_model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-    "memory_limit_mb": 1500
-}
-```
-
-### Feedback Collection
-```bash
-POST http://localhost:500X/feedback
-Content-Type: application/json
-
-{
-    "user_id": "user_123",
-    "action_id": "rec_456",
-    "rating": 5,
-    "feedback": "Great recommendations!"
-}
-
-Response:
-{
-    "status": "success",
-    "message": "Feedback collected for continuous improvement"
-}
-```
-
----
-
-## 🔍 Monitoring
-
-All agents include `llmEnhanced: true` in responses:
-
-```json
-{
-    "status": "success",
-    "data": {...},
-    "llmEnhanced": true,  // ← Indicates local LLM was used
-    "recommendations": ["..."]
-}
-```
-
-This allows tracking which agents are using local LLMs vs. standard logic.
-
----
-
-## 🚨 Troubleshooting
-
-### Issue: Out of Memory
-**Solution:** Reduce simultaneous agents or use `ultra_light` config:
-```python
-# Use TinyLlama for all agents (800MB each)
-config = M1_8GB_CONFIGS["ultra_light"]
-```
-
-### Issue: Slow Inference
-**Solution:** Reduce `max_tokens` or increase `temperature`:
-```python
-config.max_tokens = 128  # Shorter responses
-config.temperature = 0.8  # Less careful token selection
-```
-
-### Issue: Model Not Found
-**Solution:** Models auto-download on first run. Ensure internet connection:
-```bash
-# Pre-download models
-python -c "from transformers import AutoModel; AutoModel.from_pretrained('TinyLlama/TinyLlama-1.1B-Chat-v1.0')"
-```
-
----
-
-## 📁 File Structure
-
-```
-Sales-Agent/
+AGIY/
+├── main.py / main_enhanced.py     # LangChain orchestrator (Gemini Pro)
+├── tools.py                       # Agent tool definitions (REST calls)
 ├── local_llm/
-│   ├── m1_optimized_config.py      # All 6 agent configs
-│   ├── llm_manager.py              # Loading, inference, feedback
-│   ├── training_pipeline.py        # QLoRA fine-tuning
-│   └── setup_ollama.sh/bat         # Quick setup scripts
-│
-├── recommendation-agent/
-│   └── agent_local_llm.py          # ✅ NEW: Local LLM version
-├── inventory-agent/
-│   └── agent_local_llm.py          # ✅ NEW: Local LLM version
-├── fulfillment-agent/
-│   └── agent_local_llm.py          # ✅ NEW: Local LLM version
-├── loyalty-agent/
-│   └── agent_local_llm.py          # ✅ NEW: Local LLM version
-├── payment-agent/
-│   └── agent_local_llm.py          # ✅ NEW: Local LLM version
-└── post_purchase_agent/
-    └── agent_local_llm.py          # ✅ NEW: Local LLM version
+│   ���── inference_router.py        # Cloud↔Edge routing + circuit breaker
+│   ├── llm_manager.py            # 4-bit model loading + LoRA hot-reload
+│   ├── training_pipeline.py      # QLoRA fine-tuning (6GB VRAM)
+│   └── model_config.py           # RTX 3060 / M1 optimized configs
+├── recommendation-agent/          # TinyLlama 1.1B (4-bit)
+├── inventory-agent/               # StableLM 1.6B (4-bit)
+├── fulfillment-agent/             # Qwen 1.8B (4-bit)
+├── payment-agent/                 # StableLM 1.6B (4-bit)
+├── post_purchase_agent/           # TinyLlama 1.1B (4-bit)
+├── monitoring/
+│   ├── tracing.py                # OpenTelemetry + Jaeger
+│   ├── metrics.py                # Prometheus counters/histograms
+│   └─�� logging_config.py        # Structured JSON logs
+├── k8s/
+│   ├── agent-deployment.yaml     # Deployments with GPU resources
+│   ├── hpa.yaml                  # HPA with custom LLM metrics
+│   └── services.yaml            # Services + Ingress
+├── .github/workflows/
+│   └── deploy.yml               # CI/CD → ECR → EKS
+├── Dockerfile                    # Sales agent container
+├── Dockerfile.agent              # Worker agent container (parameterized)
+└── docker-compose.monitoring.yml # Local observability stack
 ```
-
----
-
-## 🎓 Best Practices
-
-1. **Start with 2-3 agents** based on your primary use case
-2. **Monitor memory usage** with Activity Monitor (Mac) or Task Manager (Windows)
-3. **Collect feedback actively** to enable continuous improvement
-4. **Use appropriate temperatures**:
-   - 0.2-0.3: Factual tasks (Payment, Inventory)
-   - 0.4-0.6: Balanced (Fulfillment, Post-Purchase)
-   - 0.7-0.8: Creative tasks (Recommendation, Loyalty)
-5. **Fine-tune regularly** (weekly/monthly) with production feedback
-6. **Keep LoRA adapters** for rollback capability
-
----
-
-## 📚 Additional Resources
-
-- **[LOCAL_LLM_SETUP.md](LOCAL_LLM_SETUP.md)** - Detailed setup instructions
-- **[m1_optimized_config.py](local_llm/m1_optimized_config.py)** - All configurations
-- **[llm_manager.py](local_llm/llm_manager.py)** - Core LLM management
-- **[training_pipeline.py](local_llm/training_pipeline.py)** - Fine-tuning implementation
-
----
-
-## 🎉 Summary
-
-✅ **6 agents** with specialized local LLMs
-✅ **5.6GB total memory** (fits M1 8GB with room to spare)
-✅ **Continuous learning** via QLoRA fine-tuning
-✅ **Production-ready** with feedback collection
-✅ **No external API costs** after initial model download
-✅ **Privacy-friendly** - all processing on-device
-
-**Next Steps:**
-1. Choose your deployment scenario (2-3 agents recommended)
-2. Start agents with `python *-agent/agent_local_llm.py`
-3. Collect feedback via `/feedback` endpoints
-4. Watch models improve automatically!
-
-## 📊 Presentation Talking Points
-
-### For Technical Audience
-
-1. **Architecture**: Multi-agent microservices with REST communication
-2. **LLM Integration**: LangChain tool-calling with Gemini Pro
-3. **Scalability**: Each agent can scale independently
-4. **Modularity**: Easy to add new agents or modify existing ones
-5. **Production Ready**: Error handling, logging, validation
-
-### For Business Audience
-
-1. **Customer Experience**: Personalized, 24/7 AI shopping assistant
-2. **Omnichannel**: Seamless online and offline integration
-3. **Efficiency**: Automated recommendations and inventory checks
-4. **ROI**: Reduced support costs, increased conversion
-5. **Innovation**: Cutting-edge AI technology
-
-### Demo Script
-
-1. **Introduction** (2 min)
-   - Show architecture diagram
-   - Explain multi-agent concept
-
-2. **Live Demo** (5 min)
-   - Start conversation: "I need a jacket"
-   - Show recommendations with bundles
-   - Check inventory with multiple options
-   - Make reservation
-   - Highlight agent communication in logs
-
-3. **Technical Deep Dive** (3 min)
-   - Show code for one agent
-   - Explain API contract
-   - Demonstrate tool calling
-
-4. **Business Value** (2 min)
-   - Metrics and KPIs
-   - Customer benefits
-   - Competitive advantage
-
----
-
-## 📝 License
-
-This project is a prototype for educational and demonstration purposes.
-
----
-
-## 👥 Contact
-
-For questions or support regarding this system, please contact the development team.
-
----
-
-## 🙏 Acknowledgments
-
-- **LangChain**: Agent framework and orchestration
-- **Google Gemini**: Large Language Model
-- **Flask**: Microservices framework
-- **MongoDB**: Database for persistence
-- **OpenTelemetry**: Distributed tracing
-- **Prometheus & Grafana**: Metrics and visualization
-- **Jaeger**: Tracing UI
-- **ABFRL**: Business use case and requirements
-
----
-
-## 📚 Additional Documentation
-
-- **[Quick Start Guide](QUICK_START.md)** - Get started in 2 minutes
-- **[Migration Guide](MIGRATION_GUIDE.md)** - Standard vs Enhanced comparison
-- **[Monitoring Setup](MONITORING_SETUP.md)** - Complete observability guide
-- **[Architecture](ARCHITECTURE.md)** - System design and architecture
-- **[Project Summary](PROJECT_SUMMARY.md)** - Complete feature summary
-
----
-
-**Built with ❤️ for the future of AI-powered retail**
-
-*Production-ready with MongoDB, distributed tracing, and comprehensive monitoring* 🚀

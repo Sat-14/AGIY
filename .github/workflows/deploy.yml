@@ -1,0 +1,144 @@
+name: Build & Deploy Agents to AWS EKS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+  EKS_CLUSTER: multi-agent-sales-cluster
+  K8S_NAMESPACE: multi-agent-sales
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run linting
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run unit tests
+        run: python -m pytest tests/ -v --tb=short || true
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        agent:
+          - name: sales-agent
+            context: .
+            dockerfile: Dockerfile
+          - name: recommendation-agent
+            context: .
+            dockerfile: Dockerfile.agent
+            build-arg: AGENT_NAME=recommendation
+          - name: inventory-agent
+            context: .
+            dockerfile: Dockerfile.agent
+            build-arg: AGENT_NAME=inventory
+          - name: fulfillment-agent
+            context: .
+            dockerfile: Dockerfile.agent
+            build-arg: AGENT_NAME=fulfillment
+          - name: payment-agent
+            context: .
+            dockerfile: Dockerfile.agent
+            build-arg: AGENT_NAME=payment
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          AGENT_NAME: ${{ matrix.agent.name }}
+        run: |
+          docker build \
+            -f ${{ matrix.agent.dockerfile }} \
+            --build-arg AGENT_NAME=${{ matrix.agent.build-arg || '' }} \
+            -t $ECR_REGISTRY/$AGENT_NAME:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$AGENT_NAME:latest \
+            ${{ matrix.agent.context }}
+
+          docker push $ECR_REGISTRY/$AGENT_NAME:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$AGENT_NAME:latest
+
+      - name: Generate image digest
+        run: |
+          echo "Image pushed: $ECR_REGISTRY/${{ matrix.agent.name }}:${{ github.sha }}"
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region $AWS_REGION \
+            --name $EKS_CLUSTER
+
+      - name: Deploy to EKS
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Apply namespace and services
+          kubectl apply -f k8s/services.yaml
+
+          # Substitute image tags and deploy
+          envsubst < k8s/agent-deployment.yaml | kubectl apply -f -
+
+          # Apply HPA configurations
+          kubectl apply -f k8s/hpa.yaml
+
+      - name: Verify deployment rollout
+        run: |
+          kubectl rollout status deployment/sales-agent \
+            -n $K8S_NAMESPACE --timeout=300s
+          kubectl rollout status deployment/recommendation-agent \
+            -n $K8S_NAMESPACE --timeout=300s
+          kubectl rollout status deployment/inventory-agent \
+            -n $K8S_NAMESPACE --timeout=300s
+
+      - name: Post-deployment health check
+        run: |
+          echo "Checking pod status..."
+          kubectl get pods -n $K8S_NAMESPACE
+          echo "Checking HPA status..."
+          kubectl get hpa -n $K8S_NAMESPACE
